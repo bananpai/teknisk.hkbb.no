@@ -1,0 +1,255 @@
+<!-- Path: C:\inetpub\wwwroot\teknisk.hkbb.no\public\webcam_dual.html -->
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webkamera – 2 live kamera side ved side</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .live-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 50;
+      background: #d40000;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1;
+      padding: 10px 14px;
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      user-select: none;
+      letter-spacing: 0.2px;
+    }
+
+    .wrap {
+      width: 100vw;
+      height: min(90vh, 1000px);
+      display: flex;
+      gap: 2px;
+      background: #111;
+      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pane {
+      position: relative;
+      flex: 1 1 50%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .media {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: 0;
+      background: #000;
+    }
+
+    iframe.media {
+      width: 100%;
+      height: 100%;
+    }
+
+    .label {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      z-index: 20;
+      padding: 6px 10px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.48);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.2;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .status {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      z-index: 20;
+      padding: 6px 10px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.48);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.2;
+      user-select: none;
+      pointer-events: none;
+      max-width: calc(100% - 20px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hud {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      z-index: 30;
+      padding: 8px 12px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.58);
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.25;
+      text-align: center;
+      user-select: none;
+      pointer-events: none;
+      min-width: min(90vw, 700px);
+      max-width: 90vw;
+    }
+
+    @media (max-width: 900px) {
+      .wrap {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .live-badge {
+        top: 10px;
+        right: 10px;
+        font-size: 14px;
+        padding: 9px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="live-badge">LIVE! from Fjæra</div>
+
+    <div class="wrap">
+      <section class="pane">
+        <div class="label">E134 Fjæra – retning Haugesund (live)</div>
+        <iframe
+          id="cam1Frame"
+          class="media"
+          src="https://xn--vindn-qra.no/r/vlive.html?3001101_1"
+          allow="autoplay; fullscreen"
+          allowfullscreen
+          referrerpolicy="no-referrer"
+          title="E134 Fjæra retning Haugesund live">
+        </iframe>
+        <div class="status" id="status1">Laster live-video…</div>
+      </section>
+
+      <section class="pane">
+        <div class="label">E134 Fjæra – retning Røldal (live)</div>
+        <iframe
+          id="cam2Frame"
+          class="media"
+          src="https://xn--vindn-qra.no/r/vlive.html?3001101_2"
+          allow="autoplay; fullscreen"
+          allowfullscreen
+          referrerpolicy="no-referrer"
+          title="E134 Fjæra retning Røldal live">
+        </iframe>
+        <div class="status" id="status2">Laster live-video…</div>
+      </section>
+    </div>
+
+    <div class="hud" id="hud">Starter live-visning…</div>
+  </div>
+
+  <script>
+    // Path: C:\inetpub\wwwroot\teknisk.hkbb.no\public\webcam_dual.html
+
+    const CAM1_URL = "https://xn--vindn-qra.no/r/vlive.html?3001101_1";
+    const CAM2_URL = "https://xn--vindn-qra.no/r/vlive.html?3001101_2";
+
+    const cam1Frame = document.getElementById("cam1Frame");
+    const cam2Frame = document.getElementById("cam2Frame");
+    const status1 = document.getElementById("status1");
+    const status2 = document.getElementById("status2");
+    const hud = document.getElementById("hud");
+
+    function updateHud() {
+      hud.textContent =
+        `Begge paneler viser live-embed • ${new Date().toLocaleTimeString("no-NO")} • Klikk for fullskjerm • F = fullskjerm • R = last inn begge på nytt`;
+    }
+
+    function reloadFrames() {
+      const t = Date.now();
+      cam1Frame.src = `${CAM1_URL}&_ts=${t}`;
+      cam2Frame.src = `${CAM2_URL}&_ts=${t}`;
+      status1.textContent = "Laster live-video…";
+      status2.textContent = "Laster live-video…";
+      updateHud();
+    }
+
+    cam1Frame.addEventListener("load", () => {
+      status1.textContent = "Live-video lastet";
+    });
+
+    cam2Frame.addEventListener("load", () => {
+      status2.textContent = "Live-video lastet";
+    });
+
+    document.addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch (err) {}
+      }
+    });
+
+    document.addEventListener("keydown", async (e) => {
+      const key = (e.key || "").toLowerCase();
+
+      if (key === "f") {
+        if (!document.fullscreenElement) {
+          try {
+            await document.documentElement.requestFullscreen();
+          } catch (err) {}
+        }
+      }
+
+      if (key === "r") {
+        reloadFrames();
+      }
+    });
+
+    updateHud();
+    setInterval(updateHud, 1000);
+  </script>
+</body>
+</html>

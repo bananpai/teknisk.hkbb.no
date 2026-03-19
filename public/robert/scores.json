@@ -1,0 +1,44 @@
+{
+    "highScores": [
+        {
+            "name": "Robert",
+            "score": 25,
+            "date": "2025-12-23 17:08:23"
+        },
+        {
+            "name": "Robert",
+            "score": 24,
+            "date": "2026-02-08 18:40:17"
+        },
+        {
+            "name": "Jone",
+            "score": 23,
+            "date": "2026-02-09 14:18:23"
+        },
+        {
+            "name": "Robert",
+            "score": 19,
+            "date": "2025-12-23 17:05:37"
+        },
+        {
+            "name": "Robert",
+            "score": 19,
+            "date": "2025-12-23 17:06:24"
+        },
+        {
+            "name": "Robert",
+            "score": 19,
+            "date": "2025-12-23 17:06:26"
+        },
+        {
+            "name": "Robert",
+            "score": 6,
+            "date": "2025-12-23 17:04:37"
+        },
+        {
+            "name": "Robert",
+            "score": 3,
+            "date": "2025-12-23 17:04:03"
+        }
+    ]
+}

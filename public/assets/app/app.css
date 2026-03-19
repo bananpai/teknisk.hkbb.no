@@ -1,0 +1,159 @@
+/* public/assets/app/app.css */
+
+:root {
+  --ts-sidebar-width: 260px;
+}
+
+/* Litt generell typografi */
+body { font-size: 0.9rem; }
+
+/* 2FA overlay */
+.twofa-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1050;
+}
+
+/* App shell layout */
+.app-shell { min-height: 100vh; }
+
+.app-sidebar{
+  flex: 0 0 var(--ts-sidebar-width);
+  background-color: var(--bs-primary);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main{
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bs-body-bg);
+}
+
+.app-topbar{
+  flex-shrink: 0;
+  background-color: var(--bs-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,.25);
+}
+
+/* Viktig: IKKE globalt .btn/.nav-link (det ødelegger sider).
+   Scope kun til sidebar/topbar. */
+.app-sidebar .nav-link,
+.app-topbar .btn,
+.app-sidebar .btn-sidebar-toggle{
+  border-radius: 0 !important;
+}
+
+.app-sidebar .nav-link{
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem 1rem;
+  color: rgba(255,255,255,0.9);
+  font-size: .95rem;
+  text-decoration: none;
+}
+.app-sidebar .nav-link i{ font-size: 1.1rem; }
+.app-sidebar .nav-link:hover{
+  background-color: rgba(255,255,255,0.15);
+  color: #fff;
+}
+.app-sidebar .nav-link.active{
+  background-color: rgba(0,0,0,0.35);
+  color: #fff;
+}
+
+.app-sidebar .nav-link.nav-sub{
+  padding-left: 2.5rem;
+  font-size: .9rem;
+  opacity: .95;
+}
+
+.app-sidebar-header{
+  padding: .5rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,.25);
+}
+
+.app-sidebar-footer{
+  margin-top: auto;
+  padding: .75rem 1rem 1rem 1rem;
+  border-top: 1px solid rgba(0,0,0,.25);
+  font-size: .85rem;
+}
+
+/* Sidebar toggles */
+.app-sidebar .btn-sidebar-toggle{
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: rgba(255,255,255,0.9);
+  padding: .6rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .9rem;
+  cursor: pointer;
+}
+.app-sidebar .btn-sidebar-toggle:hover{
+  background-color: rgba(255,255,255,0.15);
+  color: #fff;
+}
+.app-sidebar .btn-sidebar-toggle .label{
+  display:flex;
+  align-items:center;
+  gap: .5rem;
+}
+.app-sidebar .btn-sidebar-toggle i{ font-size: 1.1rem; }
+
+.netverk-collapse, .grossist-collapse, .logistikk-collapse, .felt-collapse, .admin-collapse { display:none; }
+.netverk-collapse.show, .grossist-collapse.show, .logistikk-collapse.show, .felt-collapse.show, .admin-collapse.show { display:block; }
+
+/* Brukermeny */
+.user-menu-toggle{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem .5rem;
+  background: transparent;
+  border: 0;
+  color: rgba(255,255,255,0.95);
+  cursor: pointer;
+  text-align: left;
+}
+.user-menu-toggle:hover{
+  background-color: rgba(255,255,255,0.12);
+  color: #fff;
+}
+.user-menu-collapse{ display:none; margin-top: .35rem; }
+.user-menu-collapse.show{ display:block; }
+
+.user-menu-actions a{
+  display:flex;
+  align-items:center;
+  gap: .6rem;
+  padding: .5rem .5rem;
+  color: rgba(255,255,255,0.9);
+  text-decoration:none;
+}
+.user-menu-actions a:hover{
+  background-color: rgba(255,255,255,0.12);
+  color: #fff;
+}
+.user-menu-actions a.danger{ color: #ffcccc; }
+.user-menu-actions a.danger:hover{ color: #fff; }
+
+/* Mobil */
+@media (max-width: 767.98px){
+  .app-sidebar{ display:none; }
+}

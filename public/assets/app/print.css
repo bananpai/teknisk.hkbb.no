@@ -1,0 +1,171 @@
+@page { size: A4; margin: 12mm; }
+
+@media print {
+  /* Fjern dyre effekter */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.25 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Skjul all app-UI i print */
+  .app-sidebar,
+  .app-topbar,
+  .twofa-backdrop,
+  .no-print,
+  .dropdown,
+  .toast,
+  .modal,
+  .offcanvas {
+    display: none !important;
+  }
+
+  /* Dette er ofte NØKKELEN: slå av flex/100vh i print */
+  .app-shell,
+  .app-main,
+  main.app-content,
+  .app-content,
+  .container,
+  .container-fluid {
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Bootstrap helpers som ofte ligger overalt */
+  .d-flex { display: block !important; }
+  .d-inline-flex { display: inline-block !important; }
+
+  /* Sticky/fixed er ofte print-død */
+  .sticky-top,
+  .sticky-bottom,
+  .fixed-top,
+  .fixed-bottom,
+  .position-sticky {
+    position: static !important;
+    top: auto !important;
+    bottom: auto !important;
+  }
+
+  /* Grid: gjør det enkelt for print-engine */
+  .row { display: block !important; }
+  .col, [class*="col-"] { display: block !important; width: auto !important; }
+
+  /* Tabeller: la Chrome paginere normalt */
+  table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { break-inside: auto !important; page-break-inside: auto !important; }
+
+  /* Ikke legg url etter lenker */
+  a[href]::after { content: "" !important; }
+}
+
+@page { size: A4; margin: 12mm; }
+
+@media print {
+  /* Fjern dyre effekter og alt som kan trigge layout-loop */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+
+    /* VIKTIG: bryt “avoid”-looper */
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+
+    /* VIKTIG: scroll-containere kan gjøre print-preview ekstremt treg */
+    overflow: visible !important;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.25 !important;
+
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Skjul app-UI */
+  .app-sidebar,
+  .app-topbar,
+  .twofa-backdrop,
+  .no-print,
+  .dropdown,
+  .toast,
+  .modal,
+  .offcanvas {
+    display: none !important;
+  }
+
+  /* Slå av flex/100vh i print (kritisk for Chromium) */
+  .app-shell,
+  .app-main,
+  main.app-content,
+  .app-content,
+  .container,
+  .container-fluid {
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .d-flex { display: block !important; }
+  .d-inline-flex { display: inline-block !important; }
+
+  /* Sticky/fixed dreper print-preview på enkelte layouts */
+  .sticky-top,
+  .sticky-bottom,
+  .fixed-top,
+  .fixed-bottom,
+  .position-sticky {
+    position: static !important;
+    top: auto !important;
+    bottom: auto !important;
+  }
+
+  /* Bootstrap sin table-responsive (overflow) er ofte synderen */
+  .table-responsive {
+    overflow: visible !important;
+  }
+
+  /* Tabeller: la engine gjøre standard paginering */
+  table { width: 100% !important; border-collapse: collapse !important; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { break-inside: auto !important; page-break-inside: auto !important; }
+
+  a[href]::after { content: "" !important; }
+}

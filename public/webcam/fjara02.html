@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webcam Fullskjerm (3001101_1)</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;   /* svart bakgrunn */
+      overflow: hidden;
+    }
+
+    /* Vis hele bildet uten beskjæring, med svarte kanter ved behov */
+    img {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain; /* <-- viktig */
+      display: block;
+      background: #000;
+    }
+
+    .hud {
+      position: fixed;
+      left: 10px;
+      bottom: 10px;
+      padding: 6px 10px;
+      color: #fff;
+      background: rgba(0,0,0,.45);
+      font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      border-radius: 8px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <img id="cam" alt="Webcam" />
+  <div class="hud" id="hud">Laster…</div>
+
+  <script>
+    const BASE_URL = "https://kamera.atlas.vegvesen.no/api/images/3001101_1";
+    const img = document.getElementById("cam");
+    const hud = document.getElementById("hud");
+
+    const REFRESH_MS = 1500;
+
+    function refresh() {
+      img.src = `${BASE_URL}?t=${Date.now()}`; // cache-bust
+      hud.textContent = `Oppdatert: ${new Date().toLocaleTimeString()}`;
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+
+    // Dobbelklikk kan toggle mellom contain/cover hvis du vil
+    img.addEventListener("dblclick", () => {
+      img.style.objectFit = (img.style.objectFit === "cover") ? "contain" : "cover";
+    });
+
+    // Klikk for fullskjerm
+    document.addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        try { await document.documentElement.requestFullscreen(); } catch (e) {}
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+    "theme": {
+        "name": "default",
+        "colors": {
+            "primary": "#4caf50",
+            "secondary": "#2196F3",
+            "background": "#1a1a1a",
+            "surface": "#604d4d",
+            "text": "#ffffff",
+            "textSecondary": "#b0b0b0",
+            "snake": "#4caf50",
+            "food": "#78493b",
+            "grid": "#333333",
+            "gameOver": "#f44336"
+        },
+        "fonts": {
+            "primary": "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+        }
+    },
+    "game": {
+        "gridSize": 20,
+        "initialSpeed": 150,
+        "speedIncrease": 5
+    }
+}

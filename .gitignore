@@ -1,0 +1,54 @@
+# -------------------------------------------------------
+# Hemmeligheter og miljøkonfigurasjon
+# -------------------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# -------------------------------------------------------
+# Composer-avhengigheter (gjenopprettes med: composer install)
+# -------------------------------------------------------
+/vendor/
+
+# -------------------------------------------------------
+# Brukeropplastinger og genererte filer
+# -------------------------------------------------------
+/public/uploads/
+/storage/
+
+# -------------------------------------------------------
+# Loggfiler
+# -------------------------------------------------------
+/public/pages/_log/
+/public/api/_log/
+/public/app/nodelokasjon/_log/
+/var_/
+*.log
+
+# -------------------------------------------------------
+# Backup- og kopifiler (skal ikke være i webroot)
+# -------------------------------------------------------
+/public/lager/pages/old/
+
+# -------------------------------------------------------
+# Operativsystem- og editor-filer
+# -------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*.txt
+
+# -------------------------------------------------------
+# Claude Code lokale innstillinger
+# -------------------------------------------------------
+.claude/
+
+# -------------------------------------------------------
+# PHP-filer som aldri skal deployes til prod
+# (men er OK å ha i repo for historikk)
+# -------------------------------------------------------
+# (ingen eksklusjoner her – heller bruk code review)

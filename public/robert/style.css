@@ -1,0 +1,473 @@
+/* CSS Variables for Theme Customization */
+:root {
+    /* Default colors - can be overridden by PHP */
+    --color-primary: #4CAF50;
+    --color-secondary: #2196F3;
+    --color-background: #1a1a1a;
+    --color-surface: #2d2d2d;
+    --color-text: #ffffff;
+    --color-text-secondary: #b0b0b0;
+    --color-snake: #4CAF50;
+    --color-food: #FF5722;
+    --color-grid: #333333;
+    --color-game-over: #f44336;
+    --font-primary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    background: linear-gradient(135deg, var(--color-background) 0%, #0d0d0d 100%);
+    color: var(--color-text);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Container Layout */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+    grid-template-rows: auto 1fr;
+}
+
+header {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    background: var(--color-surface);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+header h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+    font-size: 1.1em;
+}
+
+/* Game Container */
+.game-container {
+    background: var(--color-surface);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.game-info {
+    display: flex;
+    gap: 40px;
+    width: 100%;
+    justify-content: center;
+}
+
+.score-display,
+.high-score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.score-display .label,
+.high-score-display .label {
+    color: var(--color-text-secondary);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.score-display .value,
+.high-score-display .value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+/* Canvas */
+#gameCanvas {
+    border: 3px solid var(--color-primary);
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+    background: var(--color-grid);
+}
+
+/* Game Controls */
+.game-controls {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 30px;
+    font-size: 1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-primary);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), #45a049);
+    color: white;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+}
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel {
+    background: var(--color-surface);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.panel h3 {
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    color: var(--color-primary);
+}
+
+/* High Scores List */
+.high-scores-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.score-item {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    gap: 10px;
+    padding: 12px;
+    background: var(--color-background);
+    border-radius: 8px;
+    align-items: center;
+    transition: transform 0.2s ease;
+}
+
+.score-item:hover {
+    transform: translateX(5px);
+}
+
+.score-item .rank {
+    color: var(--color-primary);
+    font-weight: bold;
+}
+
+.score-item .name {
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.score-item .score {
+    color: var(--color-secondary);
+    font-weight: bold;
+}
+
+.loading,
+.no-scores,
+.error {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: 20px;
+}
+
+/* Controls List */
+.controls-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.controls-list li {
+    padding: 8px 12px;
+    background: var(--color-background);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+}
+
+/* Theme Editor */
+.theme-editor {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--color-background);
+}
+
+.theme-editor h4 {
+    margin-bottom: 15px;
+    color: var(--color-text);
+}
+
+.color-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.color-picker-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-text-secondary);
+    font-size: 0.9em;
+}
+
+.color-picker-group input[type="color"] {
+    width: 50px;
+    height: 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--color-surface);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-content h2 {
+    color: var(--color-game-over);
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.final-score {
+    font-size: 1.3em;
+    margin-bottom: 25px;
+    color: var(--color-text-secondary);
+}
+
+.final-score span {
+    display: block;
+    font-size: 2em;
+    color: var(--color-primary);
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.modal-content input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 2px solid var(--color-primary);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text);
+    font-size: 1em;
+    font-family: var(--font-primary);
+    outline: none;
+}
+
+.modal-content input[type="text"]:focus {
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+}
+
+.modal-content .btn {
+    margin: 5px;
+}
+
+/* Scrollbar Styling */
+.high-scores-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.high-scores-list::-webkit-scrollbar-track {
+    background: var(--color-background);
+    border-radius: 4px;
+}
+
+.high-scores-list::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 4px;
+}
+
+.high-scores-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .panel {
+        flex: 1;
+        min-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2em;
+    }
+    
+    .subtitle {
+        font-size: 1em;
+    }
+    
+    #gameCanvas {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    .game-container {
+        padding: 20px;
+    }
+    
+    .game-info {
+        gap: 20px;
+    }
+    
+    .score-display .value,
+    .high-score-display .value {
+        font-size: 2em;
+    }
+    
+    .sidebar {
+        flex-direction: column;
+    }
+    
+    .modal-content {
+        padding: 30px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    header {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 1.5em;
+    }
+    
+    .game-controls {
+        width: 100%;
+    }
+    
+    .btn {
+        flex: 1;
+        min-width: 100px;
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .game-controls,
+    .theme-editor,
+    #themeBtn {
+        display: none;
+    }
+}
+

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Webcam – 2 kamera side ved side</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .wrap {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      gap: 2px;              /* liten skillelinje */
+      background: #111;
+    }
+
+    .pane {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #000;      /* svart bakgrunn bak bildet */
+    }
+
+    /* Vis hele bildet uten beskjæring */
+    .pane img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;   /* <-- viktig */
+      display: block;
+      background: #000;
+    }
+
+    .label {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      padding: 6px 10px;
+      color: #fff;
+      background: rgba(0,0,0,.45);
+      font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      border-radius: 8px;
+      user-select: none;
+    }
+
+    .hud {
+      position: fixed;
+      left: 10px;
+      bottom: 10px;
+      padding: 6px 10px;
+      color: #fff;
+      background: rgba(0,0,0,.45);
+      font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      border-radius: 8px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="pane">
+      <img id="cam1" alt="Kamera 3001101_1" />
+      <div class="label">3001101_1</div>
+    </div>
+    <div class="pane">
+      <img id="cam2" alt="Kamera 3001101_2" />
+      <div class="label">3001101_2</div>
+    </div>
+  </div>
+
+  <div class="hud" id="hud">Laster…</div>
+
+  <script>
+    const CAM1 = "https://kamera.atlas.vegvesen.no/api/images/3001101_1";
+    const CAM2 = "https://kamera.atlas.vegvesen.no/api/images/3001101_2";
+
+    const img1 = document.getElementById("cam1");
+    const img2 = document.getElementById("cam2");
+    const hud  = document.getElementById("hud");
+
+    const REFRESH_MS = 1500;
+
+    function refresh() {
+      const t = Date.now(); // samme timestamp på begge
+      img1.src = `${CAM1}?t=${t}`;
+      img2.src = `${CAM2}?t=${t}`;
+      hud.textContent = `Oppdatert: ${new Date().toLocaleTimeString()}  •  (Klikk for fullskjerm, D for contain/cover)`;
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+
+    // Klikk for fullskjerm (nettleser)
+    document.addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        try { await document.documentElement.requestFullscreen(); } catch (e) {}
+      }
+    });
+
+    // Tastatur:
+    // D = toggle contain/cover (default er contain)
+    document.addEventListener("keydown", async (e) => {
+      const k = (e.key || "").toLowerCase();
+      if (k === "d") {
+        const next = (img1.style.objectFit === "cover") ? "contain" : "cover";
+        img1.style.objectFit = next;
+        img2.style.objectFit = next;
+      }
+      if (k === "f") {
+        if (!document.fullscreenElement) {
+          try { await document.documentElement.requestFullscreen(); } catch (e) {}
+        }
+      }
+    });
+  </script>
+</body>
+</html>
