@@ -179,6 +179,61 @@ $baseUrl = api_admin_base_url();
 
 $apiCatalog = [
     [
+        'title'       => 'Hendelser & Endringer',
+        'key'         => 'events',
+        'description' => 'Les aktive og planlagte hendelser/endringer. Brukes av Hkon (chatbot), Dashboard og andre integrasjoner. Scope: events:read.',
+        'auth' => [
+            'Bearer' => 'Authorization: Bearer <token>',
+        ],
+        'endpoints' => [
+            [
+                'method' => 'GET',
+                'path'   => '/api/events',
+                'scope'  => 'events:read',
+                'desc'   => 'List hendelser. Bruk ?mode= for å filtrere.',
+                'params' => [
+                    ['name' => 'mode',  'desc' => 'active (default) | planned | recent (siste 7 dager) | all'],
+                    ['name' => 'limit', 'desc' => 'Maks antall (1–200, default 50)'],
+                ],
+                'examples' => [
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=active"',
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=planned&limit=10"',
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=recent"',
+                ],
+            ],
+            [
+                'method' => 'GET',
+                'path'   => '/api/events?id=123',
+                'scope'  => 'events:read',
+                'desc'   => 'Hent én hendelse med oppdateringer og berørte målgrupper.',
+                'params' => [
+                    ['name' => 'id', 'desc' => 'ID på hendelsen (påkrevd)'],
+                ],
+                'examples' => [
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?id=123"',
+                ],
+            ],
+            [
+                'method' => 'GET',
+                'path'   => '/api/events/public',
+                'scope'  => 'events:read',
+                'desc'   => 'Hkon-feed: returnerer kun aktive saker der distribusjon "Hkon (chatbot)" er aktivert (published_to_chatbot=1). Kun kundeklare felter returneres.',
+                'params' => [
+                    ['name' => 'target_type',  'desc' => 'Valgfri filtrering på målgruppe-type (f.eks. leveransepunkt_id)'],
+                    ['name' => 'target_value', 'desc' => 'Verdi for target_type-filter'],
+                ],
+                'examples' => [
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public"',
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public?target_type=leveransepunkt_id&target_value=12345"',
+                ],
+            ],
+        ],
+        'response_note' => 'Returformat (liste): { "mode": "active", "count": 2, "items": [ { "id", "type", "status", "severity", "impact", "services", "title_public", "summary_public", "schedule_start", "schedule_end", "actual_start", "actual_end", "next_update_eta", "published_to_dashboard", "published_to_chatbot", "is_public", "updated_at", "jira_key" } ] }',
+        'status_values' => 'draft | scheduled | in_progress | monitoring | resolved | cancelled',
+        'type_values'   => 'incident | planned',
+        'severity_values' => 'none | minor | moderate | major | critical',
+    ],
+    [
         'title' => 'Feltobjekter',
         'key' => 'field_objects',
         'description' => 'Leser feltobjekter (read-only) for integrasjoner.',
@@ -220,11 +275,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'create') {
         $name = trim((string)($_POST['name'] ?? ''));
         $scopeFieldObjects = isset($_POST['scope_field_objects_read']);
+        $scopeEventsRead   = isset($_POST['scope_events_read']);
 
         if ($name === '') $name = 'API Token';
 
         $scopes = [];
         if ($scopeFieldObjects) $scopes[] = 'field_objects:read';
+        if ($scopeEventsRead)   $scopes[] = 'events:read';
         if (!$scopes) $scopes[] = 'field_objects:read';
 
         $token = api_admin_generate_token();
@@ -313,6 +370,10 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="s1" name="scope_field_objects_read" checked>
                     <label class="form-check-label" for="s1">field_objects:read</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="s2" name="scope_events_read">
+                    <label class="form-check-label" for="s2">events:read</label>
                 </div>
                 <div class="form-text">Start med read-only. Flere scopes kan legges til senere.</div>
             </div>
