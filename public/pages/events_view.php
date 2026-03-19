@@ -917,18 +917,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($canPublish) {
-          $available_kundesenter = isset($_POST['available_kundesenter']) ? 1 : 0;
-          $available_chat        = isset($_POST['available_chat']) ? 1 : 0;
-          $available_jira        = isset($_POST['available_jira']) ? 1 : 0;
+          $available_kundesenter  = isset($_POST['available_kundesenter']) ? 1 : 0;
+          $available_hkon         = isset($_POST['available_hkon']) ? 1 : 0;
+          $available_dashboard    = isset($_POST['available_dashboard']) ? 1 : 0;
 
           $pdo->prepare("
             UPDATE events SET
-              available_kundesenter=?,
-              available_chat=?,
-              available_jira=?,
-              updated_by=?
-            WHERE id=?
-          ")->execute([$available_kundesenter, $available_chat, $available_jira, $username, $id]);
+              available_kundesenter  = ?,
+              published_to_chatbot   = ?,
+              available_chat         = ?,
+              published_to_dashboard = ?,
+              updated_by             = ?
+            WHERE id = ?
+          ")->execute([
+            $available_kundesenter,
+            $available_hkon,
+            $available_hkon,   // synk available_chat med Hkon-flagget
+            $available_dashboard,
+            $username,
+            $id
+          ]);
         }
 
         $ok = 'Lagret.';
@@ -1296,6 +1304,42 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
           <?php endif; ?>
         </div>
       </div>
+
+      <!-- Distribusjon: hvilke kilder som skal ha tilgang til saken -->
+      <?php if ($canPublish): ?>
+      <div class="col-12">
+        <hr class="my-2">
+        <label class="form-label fw-semibold">Distribusjon</label>
+        <div class="form-text mb-2">Velg hvilke systemer og kanaler som skal ha tilgang til denne saken.</div>
+        <div class="d-flex flex-wrap gap-3">
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="available_kundesenter" name="available_kundesenter"
+                   <?= ((int)($event['available_kundesenter'] ?? 0) === 1) ? 'checked' : '' ?>>
+            <label class="form-check-label" for="available_kundesenter">
+              <i class="bi bi-headset me-1"></i> Kundesenter
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="available_hkon" name="available_hkon"
+                   <?= ((int)($event['published_to_chatbot'] ?? 0) === 1) ? 'checked' : '' ?>>
+            <label class="form-check-label" for="available_hkon">
+              <i class="bi bi-robot me-1"></i> Hkon (chatbot)
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="available_dashboard" name="available_dashboard"
+                   <?= ((int)($event['published_to_dashboard'] ?? 0) === 1) ? 'checked' : '' ?>>
+            <label class="form-check-label" for="available_dashboard">
+              <i class="bi bi-display me-1"></i> Dashboard
+            </label>
+          </div>
+
+        </div>
+      </div>
+      <?php endif; ?>
 
       <div class="col-12 d-flex gap-2">
         <?php if ($canWrite || $canPublish): ?>
