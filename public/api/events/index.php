@@ -11,6 +11,10 @@
 //  - GET /api/events?id=123 (hent én)
 //  - GET /api/events/public?target_type=...&target_value=... (public feed for Hkon)
 //    - Returnerer bare der is_public=1 og published_to_chatbot=1
+//  - GET /api/events?mode=address_lookup&postal_code=3600[&street=Storgata][&house_number=5][&house_letter=A]
+//    - Slår opp om en adresse er berørt av aktive hendelser/endringer
+//    - Returnerer bare hendelser der published_to_chatbot=1 og status er aktiv
+//    - Brukes av Hkon-chatbot for å sjekke om en kunde er rammet
 //
 // NB: Dette er et “trygt” feed: kun kundeklar tekst + status/impact/tid + scope.
 
@@ -88,6 +92,79 @@ $mode = (string)($_GET['mode'] ?? 'active');
 $limit = (int)($_GET['limit'] ?? 50);
 if ($limit < 1) $limit = 50;
 if ($limit > 200) $limit = 200;
+
+// ----------------------------------------------------------------
+// Adresse-oppslag: er en gitt adresse berørt av aktive hendelser?
+// GET /api/events?mode=address_lookup&postal_code=3600&street=Storgata&house_number=5&house_letter=A
+// Minst postal_code må oppgis. street/house_number/house_letter er valgfrie filtere.
+// Returnerer kun hendelser der published_to_chatbot=1 og status er aktiv/planlagt.
+// ----------------------------------------------------------------
+if ($mode === 'address_lookup') {
+  $postal_code  = trim((string)($_GET['postal_code']  ?? ''));
+  $street       = trim((string)($_GET['street']       ?? ''));
+  $house_number = trim((string)($_GET['house_number'] ?? ''));
+  $house_letter = trim((string)($_GET['house_letter'] ?? ''));
+
+  if ($postal_code === '') {
+    json_out(400, ['error'=>'bad_request','error_description'=>'postal_code er påkrevd']);
+  }
+
+  $whereParts = [
+    "e.published_to_chatbot = 1",
+    "e.is_public = 1",
+    "e.status IN ('scheduled','in_progress','monitoring')",
+    "aa.postal_code = ?",
+  ];
+  $args = [$postal_code];
+
+  if ($street !== '') {
+    $whereParts[] = "LOWER(aa.street) = LOWER(?)";
+    $args[] = $street;
+  }
+  if ($house_number !== '') {
+    $whereParts[] = "aa.house_number = ?";
+    $args[] = $house_number;
+  }
+  if ($house_letter !== '') {
+    $whereParts[] = "LOWER(aa.house_letter) = LOWER(?)";
+    $args[] = $house_letter;
+  }
+
+  $sqlWhere = "WHERE " . implode(" AND ", $whereParts);
+
+  $sql = "
+    SELECT DISTINCT
+      e.id, e.type, e.status, e.severity,
+      e.title_public, e.summary_public, e.customer_actions,
+      e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
+      e.next_update_eta, e.affected_customers,
+      e.updated_at
+    FROM events e
+    JOIN event_affected_addresses aa ON aa.event_id = e.id
+    $sqlWhere
+    ORDER BY COALESCE(e.schedule_start, e.actual_start, e.updated_at) DESC, e.id DESC
+    LIMIT 20
+  ";
+
+  $st = $pdo->prepare($sql);
+  $st->execute($args);
+  $events = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+  $addressQueried = array_filter([
+    'street'       => $street       !== '' ? $street       : null,
+    'house_number' => $house_number !== '' ? $house_number : null,
+    'house_letter' => $house_letter !== '' ? $house_letter : null,
+    'postal_code'  => $postal_code,
+  ]);
+
+  json_out(200, [
+    'mode'     => 'address_lookup',
+    'address'  => $addressQueried,
+    'affected' => count($events) > 0,
+    'count'    => count($events),
+    'events'   => $events,
+  ]);
+}
 
 if ($id > 0) {
   $st = $pdo->prepare("
