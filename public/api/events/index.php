@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../config.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -63,7 +63,7 @@ function require_scope(array $scopes, string $need): void {
 }
 
 try {
-  $pdo = getPDO();
+  $pdo = \App\Database::getConnection();
 } catch (Throwable $e) {
   json_out(500, ['error'=>'server_error','error_description'=>'DB connection failed']);
 }
