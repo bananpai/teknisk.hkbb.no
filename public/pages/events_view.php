@@ -165,12 +165,13 @@ $host   = (string)($_SERVER['HTTP_HOST'] ?? '');
 $baseUrl = ($host !== '') ? ($scheme . '://' . $host) : '';
 
 /* ------------------------------------------------------------
-   Jira config (les fra config hvis definert)
+   Jira config (les fra .env via App\Support\Env)
 ------------------------------------------------------------ */
-$JIRA_SITE        = defined('JIRA_SITE') ? (string)JIRA_SITE : 'https://hkraft.atlassian.net';
-$JIRA_EMAIL       = defined('JIRA_EMAIL') ? (string)JIRA_EMAIL : '';
-$JIRA_API_TOKEN   = defined('JIRA_API_TOKEN') ? (string)JIRA_API_TOKEN : '';
-$JIRA_PROJECT_KEY = defined('JIRA_PROJECT_KEY') ? (string)JIRA_PROJECT_KEY : '';
+\App\Support\Env::load();
+$JIRA_SITE        = (string)\App\Support\Env::get('JIRA_BASE_URL',     'https://hkraft.atlassian.net');
+$JIRA_EMAIL       = (string)\App\Support\Env::get('JIRA_USER_EMAIL',   '');
+$JIRA_API_TOKEN   = (string)\App\Support\Env::get('JIRA_API_TOKEN',    '');
+$JIRA_PROJECT_KEY = (string)\App\Support\Env::get('JIRA_PROJECT_KEY',  '');
 
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
