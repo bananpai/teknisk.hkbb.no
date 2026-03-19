@@ -168,10 +168,12 @@ $baseUrl = ($host !== '') ? ($scheme . '://' . $host) : '';
    Jira config (les fra .env via App\Support\Env)
 ------------------------------------------------------------ */
 \App\Support\Env::load();
-$JIRA_SITE        = (string)\App\Support\Env::get('JIRA_BASE_URL',     'https://hkraft.atlassian.net');
-$JIRA_EMAIL       = (string)\App\Support\Env::get('JIRA_USER_EMAIL',   '');
-$JIRA_API_TOKEN   = (string)\App\Support\Env::get('JIRA_API_TOKEN',    '');
-$JIRA_PROJECT_KEY = (string)\App\Support\Env::get('JIRA_PROJECT_KEY',  '');
+$JIRA_SITE              = (string)\App\Support\Env::get('JIRA_BASE_URL',              'https://hkraft.atlassian.net');
+$JIRA_EMAIL             = (string)\App\Support\Env::get('JIRA_USER_EMAIL',            '');
+$JIRA_API_TOKEN         = (string)\App\Support\Env::get('JIRA_API_TOKEN',             '');
+$JIRA_PROJECT_KEY       = (string)\App\Support\Env::get('JIRA_PROJECT_KEY',           '');
+$JIRA_ISSUE_TYPE_INC    = (string)\App\Support\Env::get('JIRA_ISSUE_TYPE_INCIDENT',   'Hendelse');
+$JIRA_ISSUE_TYPE_PLAN   = (string)\App\Support\Env::get('JIRA_ISSUE_TYPE_PLANNED',    'Endringsordre med godkjenning');
 
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
@@ -1015,12 +1017,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $descLines[] = $linkBack;
             }
 
+            $jiraIssueType = ((string)$event['type'] === 'planned') ? $JIRA_ISSUE_TYPE_PLAN : $JIRA_ISSUE_TYPE_INC;
+
             $payload = [
               'fields' => [
                 'project' => ['key' => $JIRA_PROJECT_KEY],
                 'summary' => (string)($event['title_public'] ?? 'Sak fra Teknisk Side'),
                 'description' => jira_adf_doc_from_text(implode("\n", $descLines)),
-                'issuetype' => ['name' => 'Task'],
+                'issuetype' => ['name' => $jiraIssueType],
               ]
             ];
 
