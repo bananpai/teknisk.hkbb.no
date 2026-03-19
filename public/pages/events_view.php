@@ -926,6 +926,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               available_kundesenter  = ?,
               published_to_chatbot   = ?,
               available_chat         = ?,
+              is_public              = ?,
               published_to_dashboard = ?,
               updated_by             = ?
             WHERE id = ?
@@ -933,6 +934,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $available_kundesenter,
             $available_hkon,
             $available_hkon,   // synk available_chat med Hkon-flagget
+            $available_hkon,   // is_public følger Hkon-flagget
             $available_dashboard,
             $username,
             $id
