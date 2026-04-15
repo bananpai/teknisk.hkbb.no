@@ -1,5 +1,5 @@
 <?php
-// Path: public/pages/node_location_edit.php
+// Path: C:\inetpub\wwwroot\teknisk.hkbb.no\public\pages\node_location_edit.php
 
 use App\Database;
 
@@ -979,6 +979,9 @@ $openDanger = false;
               <button type="button" class="btn btn-outline-secondary" id="nlMapUseMyPos">
                 <i class="bi bi-crosshair"></i> Finn min posisjon
               </button>
+              <button type="button" class="btn btn-outline-secondary" id="nlGeocodeAddress">
+                <i class="bi bi-search"></i> Posisjon fra adresse
+              </button>
               <button type="button" class="btn btn-outline-secondary" id="nlMapClear">
                 <i class="bi bi-x-circle"></i> Nullstill posisjon
               </button>
@@ -1339,11 +1342,13 @@ document.addEventListener('DOMContentLoaded', function () {
   var lonInput = document.getElementById('nlLon');
 
   var addr1Input = document.getElementById('nlAddr1');
+  var addr2Input = document.getElementById('nlAddr2');
   var postalInput = document.getElementById('nlPostal');
   var cityInput = document.getElementById('nlCity');
   var regionInput = document.getElementById('nlRegion');   // hidden
   var countryInput = document.getElementById('nlCountry'); // hidden
   var geoBtn = document.getElementById('nlLookupAddress');
+  var geocodeBtn = document.getElementById('nlGeocodeAddress');
   var geoStatus = document.getElementById('nlGeoStatus');
 
   var mapCollapseEl = document.getElementById('nlAccMap'); // collapse container
@@ -1368,6 +1373,22 @@ document.addEventListener('DOMContentLoaded', function () {
     lonInput.value = (Math.round(lon * 10000000) / 10000000).toFixed(7);
   }
 
+  function buildAddressQuery() {
+    var parts = [];
+    var a1 = addr1Input ? String(addr1Input.value || '').trim() : '';
+    var a2 = addr2Input ? String(addr2Input.value || '').trim() : '';
+    var pc = postalInput ? String(postalInput.value || '').trim() : '';
+    var city = cityInput ? String(cityInput.value || '').trim() : '';
+
+    if (a1) parts.push(a1);
+    if (a2) parts.push(a2);
+
+    var postCity = (pc + ' ' + city).trim();
+    if (postCity) parts.push(postCity);
+
+    return parts.join(', ');
+  }
+
   var initialLat = <?= ($latVal !== null ? json_encode($latVal) : 'null') ?>;
   var initialLon = <?= ($lonVal !== null ? json_encode($lonVal) : 'null') ?>;
 
@@ -1386,6 +1407,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }).addTo(map);
 
   var marker = null;
+  var reverseTimer = null;
 
   function ensureMarker(lat, lon) {
     if (!marker) {
@@ -1393,6 +1415,11 @@ document.addEventListener('DOMContentLoaded', function () {
       marker.on('dragend', function () {
         var p = marker.getLatLng();
         setInputs(p.lat, p.lng);
+
+        if (reverseTimer) clearTimeout(reverseTimer);
+        reverseTimer = setTimeout(function () {
+          reverseLookupFromInputs(true);
+        }, 300);
       });
     } else {
       marker.setLatLng([lat, lon]);
@@ -1404,6 +1431,11 @@ document.addEventListener('DOMContentLoaded', function () {
   map.on('click', function (e) {
     ensureMarker(e.latlng.lat, e.latlng.lng);
     setInputs(e.latlng.lat, e.latlng.lng);
+
+    if (reverseTimer) clearTimeout(reverseTimer);
+    reverseTimer = setTimeout(function () {
+      reverseLookupFromInputs(true);
+    }, 300);
   });
 
   function syncFromInputs() {
@@ -1479,48 +1511,109 @@ document.addEventListener('DOMContentLoaded', function () {
     return s.substring(0, 2);
   }
 
+  function reverseLookupFromInputs(silent) {
+    var lat = parseNum(latInput.value);
+    var lon = parseNum(lonInput.value);
+    if (lat === null || lon === null) {
+      if (!silent) setGeoStatus('Fyll inn gyldig lat/lon først.', true);
+      return Promise.reject(new Error('Mangler gyldig lat/lon'));
+    }
+
+    if (!silent) setGeoStatus('Henter adresse…');
+    if (!silent && geoBtn) geoBtn.disabled = true;
+
+    var fd = new FormData();
+    fd.append('lat', String(lat));
+    fd.append('lon', String(lon));
+
+    return fetch('/api/node_location_reverse_geocode.php', {
+      method: 'POST',
+      body: fd,
+      credentials: 'same-origin'
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        try { return JSON.parse(txt); }
+        catch (e) { throw new Error('Server svarte ikke med JSON: ' + txt.slice(0, 250)); }
+      });
+    }).then(function (res) {
+      if (!res || !res.ok) throw new Error(res && res.error ? res.error : 'Ukjent feil');
+
+      if (addr1Input && res.address_line1) addr1Input.value = res.address_line1;
+      if (postalInput && res.postal_code) postalInput.value = res.postal_code;
+      if (cityInput && res.city) cityInput.value = res.city;
+
+      if (regionInput && res.region) regionInput.value = res.region;
+
+      var cc = res.country_code ? normalizeCountry2(res.country_code) : normalizeCountry2(res.country);
+      if (countryInput && cc) countryInput.value = cc;
+
+      if (!silent) {
+        setGeoStatus(res.display_name ? ('Fant: ' + res.display_name) : 'Adresse oppdatert.');
+      }
+      return res;
+    }).catch(function (err) {
+      if (!silent) setGeoStatus(err && err.message ? err.message : 'Feil', true);
+      throw err;
+    }).finally(function () {
+      if (!silent && geoBtn) geoBtn.disabled = false;
+    });
+  }
+
   if (geoBtn) {
     geoBtn.addEventListener('click', function () {
-      var lat = parseNum(latInput.value);
-      var lon = parseNum(lonInput.value);
-      if (lat === null || lon === null) {
-        setGeoStatus('Fyll inn gyldig lat/lon først.', true);
+      reverseLookupFromInputs(false).catch(function () {});
+    });
+  }
+
+  // -------------------------
+  // Geocode (adresse -> lat/lon)
+  // -------------------------
+  if (geocodeBtn) {
+    geocodeBtn.addEventListener('click', function () {
+      var query = buildAddressQuery();
+      if (!query) {
+        setGeoStatus('Fyll inn adresse først.', true);
         return;
       }
 
-      setGeoStatus('Henter adresse…');
-      geoBtn.disabled = true;
+      setGeoStatus('Søker opp posisjon fra adresse…');
+      geocodeBtn.disabled = true;
 
-      var fd = new FormData();
-      fd.append('lat', String(lat));
-      fd.append('lon', String(lon));
-
-      fetch('/api/node_location_reverse_geocode.php', {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin'
+      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
       }).then(function (r) {
-        return r.text().then(function (txt) {
-          try { return JSON.parse(txt); }
-          catch (e) { throw new Error('Server svarte ikke med JSON: ' + txt.slice(0, 250)); }
-        });
-      }).then(function (res) {
-        if (!res || !res.ok) throw new Error(res && res.error ? res.error : 'Ukjent feil');
+        if (!r.ok) throw new Error('Adresseoppslag feilet (' + r.status + ')');
+        return r.json();
+      }).then(function (rows) {
+        if (!Array.isArray(rows) || !rows.length) {
+          throw new Error('Fant ingen posisjon for adressen.');
+        }
 
-        if (addr1Input && res.address_line1) addr1Input.value = res.address_line1;
-        if (postalInput && res.postal_code) postalInput.value = res.postal_code;
-        if (cityInput && res.city) cityInput.value = res.city;
+        var row = rows[0];
+        var lat = parseNum(row.lat);
+        var lon = parseNum(row.lon);
 
-        if (regionInput && res.region) regionInput.value = res.region;
+        if (lat === null || lon === null) {
+          throw new Error('Fant ikke gyldige koordinater for adressen.');
+        }
 
-        var cc = res.country_code ? normalizeCountry2(res.country_code) : normalizeCountry2(res.country);
-        if (countryInput && cc) countryInput.value = cc;
+        ensureMarker(lat, lon);
+        setInputs(lat, lon);
+        map.setView([lat, lon], 16);
+        setGeoStatus('Posisjon funnet fra adresse. Du kan nå flytte punktet i kartet ved behov.');
 
-        setGeoStatus(res.display_name ? ('Fant: ' + res.display_name) : 'Adresse oppdatert.');
+        // Etter oppslag: map gjerne adressefelt mot faktisk punkt
+        if (reverseTimer) clearTimeout(reverseTimer);
+        reverseTimer = setTimeout(function () {
+          reverseLookupFromInputs(true);
+        }, 250);
       }).catch(function (err) {
-        setGeoStatus(err && err.message ? err.message : 'Feil', true);
+        setGeoStatus(err && err.message ? err.message : 'Feil ved adresseoppslag.', true);
       }).finally(function () {
-        geoBtn.disabled = false;
+        geocodeBtn.disabled = false;
       });
     });
   }

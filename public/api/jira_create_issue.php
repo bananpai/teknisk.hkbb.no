@@ -28,6 +28,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Krev gyldig innlogget sesjon
+if (empty($_SESSION['username'])) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'Ikke autentisert.']);
+    exit;
+}
+
 /**
  * Leser .env-fil uten eksterne biblioteker.
  */

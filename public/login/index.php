@@ -51,10 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $twoFaSecret  = $userRow['twofa_secret'];
         } catch (\Throwable $dbEx) {
             // Hvis DB feiler vil vi fortsatt la brukeren logge inn via AD.
-            // eventuelt: error_log($dbEx->getMessage());
+            error_log('Login DB-sync feilet for ' . ($authResult['username'] ?? '?') . ': ' . $dbEx->getMessage());
         }
 
-        // 3) Sett sesjon (AD + roller + 2FA-status)
+        // 3) Regenerer session-ID for å hindre session fixation-angrep
+        session_regenerate_id(true);
+
+        // 4) Sett sesjon (AD + roller + 2FA-status)
         $_SESSION['fullname']       = $authResult['fullname'] ?? $authResult['username'];
         $_SESSION['username']       = $authResult['username'];
         $_SESSION[$group]           = 'Yes';
@@ -62,15 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['required_group'] = $group;
 
         // 2FA i sesjon: ny innlogging → må verifisere på nytt
+        // NB: 2FA-hemmeligheten lagres ikke i sesjonen – den hentes fra DB ved behov
         $_SESSION['2fa_enabled']    = false;
-        $_SESSION['2fa_secret']     = $twoFaSecret;
         $_SESSION['2fa_configured'] = $twoFaEnabled && !empty($twoFaSecret);
 
         // Videre til hovedapp
         header('Location: /?page=start');
         exit;
     } catch (\Throwable $e) {
-        // error_log($e->getMessage());
+        error_log('Innlogging feilet: ' . $e->getMessage());
         header('Location: /login/?noaccess=1');
         exit;
     }

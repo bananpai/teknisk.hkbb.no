@@ -107,7 +107,6 @@ if (!$pdo) {
 // Rolle-guard (user_roles) + fallback admin
 // ---------------------------------------------------------
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') $isAdmin = true;
 
 $currentUserId = 0;
 $currentRoles  = [];
@@ -251,6 +250,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $stmt->execute([':s' => $status, ':id' => $id]);
 
             $successMessage = 'Status oppdatert.';
+
+        } elseif ($action === 'delete') {
+            if (!$isAdmin) {
+                throw new RuntimeException('Kun administratorer kan slette fakturagrunnlag.');
+            }
+
+            $id = post_int('id');
+            if ($id <= 0) throw new RuntimeException('Ugyldig ID.');
+
+            // Slett tilknyttede linjer hvis tabellen finnes
+            if (tableExists($pdo, 'billing_invoice_lines')) {
+                $pdo->prepare("DELETE FROM billing_invoice_lines WHERE invoice_id = :id")
+                    ->execute([':id' => $id]);
+            }
+
+            $stmt = $pdo->prepare("DELETE FROM billing_invoice_drafts WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $id]);
+
+            $successMessage = 'Fakturagrunnlag #' . $id . ' ble slettet.';
         }
     } catch (\Throwable $e) {
         $errors[] = $e->getMessage();
@@ -577,6 +595,15 @@ function statusBadge(string $s): array {
                                            title="Åpne utskrift">
                                             <i class="bi bi-printer"></i> Print
                                         </a>
+
+                                        <?php if ($isAdmin): ?>
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
+                                                title="Slett fakturagrunnlag"
+                                                onclick="deleteDraft(<?= $id ?>, <?= h(json_encode($title !== '' ? $title : '#' . $id)) ?>)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -604,3 +631,19 @@ function statusBadge(string $s): array {
         </div>
     </div>
 </div>
+
+<?php if ($isAdmin): ?>
+<!-- Skjult slett-skjema (brukes av deleteDraft()) -->
+<form id="deleteForm" method="post" class="d-none">
+    <input type="hidden" name="action" value="delete">
+    <input type="hidden" name="id" id="deleteId" value="">
+</form>
+
+<script>
+function deleteDraft(id, label) {
+    if (!confirm('Slett fakturagrunnlag ' + label + '?\n\nDenne handlingen kan ikke angres.')) return;
+    document.getElementById('deleteId').value = id;
+    document.getElementById('deleteForm').submit();
+}
+</script>
+<?php endif; ?>

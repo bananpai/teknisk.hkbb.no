@@ -30,9 +30,6 @@ if ($username === '') {
 }
 
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') {
-    $isAdmin = true;
-}
 
 $currentUserId = 0;
 $currentRoles  = [];

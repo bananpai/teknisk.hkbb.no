@@ -163,24 +163,34 @@ if (!$canRead) {
 $q = trim((string)($_GET['q'] ?? ''));
 
 // Tillatte statuser (DB-verdier)
-$allStatuses = ['draft','scheduled','in_progress','monitoring','resolved','cancelled'];
+$allStatuses     = ['draft','scheduled','in_progress','monitoring','resolved','cancelled'];
+$defaultStatuses = ['draft','scheduled','in_progress','monitoring']; // skjul utførte/avlyste som default
+
+// Bruk 'show_all=1' for å se alle statuser ufiltrert
+$showAll = isset($_GET['show_all']);
 
 // status kan komme som:
 // 1) status[]=in_progress&status[]=scheduled  (multi-select)
-// 2) status=in_progress,scheduled            (komma-separert, for enkel copy/paste)
+// 2) status=in_progress,scheduled            (komma-separert)
 // 3) status=in_progress                      (enkelt)
 $selectedStatuses = [];
-if (isset($_GET['status']) && is_array($_GET['status'])) {
-  $selectedStatuses = array_map('strtolower', array_map('trim', $_GET['status']));
-} else {
-  $raw = (string)($_GET['status'] ?? '');
-  if ($raw !== '') {
-    $selectedStatuses = array_map('strtolower', array_map('trim', explode(',', $raw)));
+if (!$showAll) {
+  if (isset($_GET['status']) && is_array($_GET['status'])) {
+    $selectedStatuses = array_map('strtolower', array_map('trim', $_GET['status']));
+  } else {
+    $raw = (string)($_GET['status'] ?? '');
+    if ($raw !== '') {
+      $selectedStatuses = array_map('strtolower', array_map('trim', explode(',', $raw)));
+    }
+  }
+  $selectedStatuses = array_values(array_unique(array_filter($selectedStatuses, function($s) use ($allStatuses) {
+    return $s !== '' && in_array($s, $allStatuses, true);
+  })));
+  // Ingen eksplisitt filter valgt → bruk default (skjul utført/avlyst)
+  if (empty($selectedStatuses)) {
+    $selectedStatuses = $defaultStatuses;
   }
 }
-$selectedStatuses = array_values(array_unique(array_filter($selectedStatuses, function($s) use ($allStatuses) {
-  return $s !== '' && in_array($s, $allStatuses, true);
-})));
 
 // Bygg WHERE
 $where = [];
@@ -433,146 +443,279 @@ function fmt_dt(?string $dt): string {
 }
 
 ?>
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <div>
-    <h3 class="mb-0">Hendelser &amp; planlagte jobber</h3>
+<style>
+.ev-filter-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bs-border-color, #dee2e6);
+  background: transparent;
+  cursor: pointer;
+  transition: background .1s, color .1s, border-color .1s;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.ev-filter-btn.active {
+  color: #fff !important;
+}
+.ev-filter-btn[data-status="draft"].active        { background:#6c757d; border-color:#6c757d; }
+.ev-filter-btn[data-status="scheduled"].active    { background:#0dcaf0; border-color:#0dcaf0; color:#000!important; }
+.ev-filter-btn[data-status="in_progress"].active  { background:#dc3545; border-color:#dc3545; }
+.ev-filter-btn[data-status="monitoring"].active   { background:#ffc107; border-color:#ffc107; color:#000!important; }
+.ev-filter-btn[data-status="resolved"].active     { background:#198754; border-color:#198754; }
+.ev-filter-btn[data-status="cancelled"].active    { background:#212529; border-color:#212529; }
+
+#eventsTable tbody tr { cursor: pointer; }
+#eventsTable tbody tr:hover td { background: var(--bs-table-hover-bg, rgba(0,0,0,.04)); }
+
+.ev-dist-icon { font-size: 11px; opacity: .45; }
+.ev-dist-icon.on { opacity: 1; }
+
+.ev-jira-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+</style>
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <h3 class="mb-0 h5">Hendelser</h3>
+    <span class="badge text-bg-success" id="liveBadge" title="Siden oppdateres automatisk">
+      <i class="bi bi-circle-fill me-1" style="font-size:7px;vertical-align:middle;"></i>Live
+    </span>
   </div>
-  <div class="d-flex gap-2 align-items-center">
-    <span class="badge bg-success" id="liveBadge" title="Siden oppdateres automatisk">Live</span>
-    <?php if ($canWrite || $canPublish): ?>
-      <a class="btn btn-primary" href="/?page=events_new">Ny sak</a>
-    <?php endif; ?>
-  </div>
+  <?php if ($canWrite || $canPublish): ?>
+    <a class="btn btn-primary btn-sm" href="/?page=events_new">
+      <i class="bi bi-plus-lg me-1"></i>Ny sak
+    </a>
+  <?php endif; ?>
 </div>
 
-<form class="row g-2 mb-3" method="get" action="/">
+<!-- Filter -->
+<form id="evFilterForm" class="mb-3" method="get" action="/">
   <input type="hidden" name="page" value="events">
+  <?php if ($showAll): ?>
+    <input type="hidden" name="show_all" value="1">
+  <?php else: ?>
+    <?php
+      // Skriv kun ut status-inputs hvis de avviker fra default,
+      // så en "tom" URL gir default-filteret automatisk.
+      $statusesToEmit = ($selectedStatuses !== $defaultStatuses) ? $selectedStatuses : [];
+    ?>
+    <?php foreach ($statusesToEmit as $s): ?>
+      <input type="hidden" name="status[]" value="<?= esc($s) ?>" class="js-status-input">
+    <?php endforeach; ?>
+  <?php endif; ?>
 
-  <div class="col-12 col-md-6">
-    <input class="form-control" name="q" value="<?= esc($q) ?>" placeholder="Søk: tittel, leveransepunkt/adresse/kunde/område/product-id …">
-  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <!-- Søk -->
+    <div class="input-group input-group-sm" style="width:260px;min-width:180px;">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input class="form-control" name="q" value="<?= esc($q) ?>" placeholder="Søk tittel, kunde …">
+      <?php if ($q !== ''): ?>
+        <a class="btn btn-outline-secondary" href="/?page=events<?= $selectedStatuses ? '&' . http_build_query(['status' => $selectedStatuses]) : '' ?>">
+          <i class="bi bi-x"></i>
+        </a>
+      <?php endif; ?>
+    </div>
 
-  <div class="col-12 col-md-4">
-    <select class="form-select" name="status[]" multiple size="1" id="statusSelect" aria-label="Velg status">
-      <?php foreach ($allStatuses as $s): ?>
-        <option value="<?= esc($s) ?>" <?= in_array($s, $selectedStatuses, true) ? 'selected' : '' ?>>
+    <!-- Status-filterknapper -->
+    <div class="d-flex flex-wrap gap-1">
+      <?php foreach ($allStatuses as $s):
+        $active = in_array($s, $selectedStatuses, true);
+      ?>
+        <button type="button"
+                class="ev-filter-btn <?= $active ? 'active' : '' ?>"
+                data-status="<?= esc($s) ?>">
           <?= esc(status_label_no($s)) ?>
-        </option>
+        </button>
       <?php endforeach; ?>
-    </select>
-    <div class="form-text">Hold Ctrl/⌘ for flere. Tomt = alle statuser.</div>
-  </div>
+    </div>
 
-  <div class="col-12 col-md-2 d-grid">
-    <button class="btn btn-outline-primary">Filtrer</button>
+    <?php
+      $isDefault = ($selectedStatuses === $defaultStatuses && $q === '' && !$showAll);
+    ?>
+    <?php if ($showAll): ?>
+      <a class="btn btn-sm btn-link text-muted p-0 ms-1" href="/?page=events">
+        <i class="bi bi-eye-slash me-1"></i>Skjul utførte/avlyste
+      </a>
+    <?php elseif (!$isDefault || $q !== ''): ?>
+      <a class="btn btn-sm btn-link text-muted p-0 ms-1" href="/?page=events">Nullstill</a>
+    <?php else: ?>
+      <a class="btn btn-sm btn-link text-muted p-0 ms-1" href="/?page=events&show_all=1">
+        <i class="bi bi-eye me-1"></i>Vis utførte/avlyste
+      </a>
+    <?php endif; ?>
   </div>
 </form>
 
+<!-- Tabell -->
 <?php if (!$rows): ?>
-  <div class="alert alert-info">Ingen saker å vise med valgt filter.</div>
+  <div class="alert alert-light border text-muted small">
+    <i class="bi bi-inbox me-2"></i>Ingen saker å vise med valgt filter.
+  </div>
 <?php else: ?>
   <div class="table-responsive">
-    <table class="table table-hover align-middle" id="eventsTable">
-      <thead>
-      <tr class="text-muted">
-        <th style="width:120px;">Status</th>
-        <th style="width:120px;">Type</th>
-        <th>Tittel</th>
-        <th style="width:140px;" class="text-end">Berørte kunder</th>
-        <th style="width:170px;">Tid</th>
-        <th style="width:130px;">Publisert</th>
-        <th style="width:200px;">Jira</th>
-        <th style="width:140px;" class="text-end">Oppdatert</th>
-      </tr>
+    <table class="table table-hover align-middle mb-0" id="eventsTable">
+      <thead class="table-light">
+        <tr class="small text-muted">
+          <th style="width:150px;">Status</th>
+          <th>Tittel</th>
+          <th style="width:170px;">Tid</th>
+          <th style="width:80px;" class="text-center">Kunder</th>
+          <th style="width:90px;" class="text-center">Dist.</th>
+          <th style="width:120px;" class="text-end">Oppdatert</th>
+        </tr>
       </thead>
       <tbody>
       <?php foreach ($rows as $r):
-        $id = (int)($r['id'] ?? 0);
-        $status = (string)($r['status'] ?? '');
-        $type = (string)($r['type'] ?? '');
+        $id       = (int)($r['id'] ?? 0);
+        $status   = (string)($r['status'] ?? '');
+        $type     = (string)($r['type'] ?? '');
+        $sev      = (string)($r['severity'] ?? '');
+        $affected = (int)($r['affected_customers'] ?? 0);
 
-        $pubDash = (int)($r['published_to_dashboard'] ?? 0) === 1;
-        $pubBot  = (int)($r['published_to_chatbot'] ?? 0) === 1;
+        $pubDash  = (int)($r['published_to_dashboard'] ?? 0) === 1;
+        $pubBot   = (int)($r['published_to_chatbot'] ?? 0) === 1;
         $isPublic = (int)($r['is_public'] ?? 0) === 1;
 
-        $time = '';
+        $titlePublic   = (string)($r['title_public'] ?? '');
+        $titleInternal = (string)($r['title_internal'] ?? '');
+
         if ($type === 'planned') {
-          $time = trim(fmt_dt($r['schedule_start'] ?? null) . '–' . fmt_dt($r['schedule_end'] ?? null), '–');
+          $time = trim(fmt_dt($r['schedule_start'] ?? null) . ' – ' . fmt_dt($r['schedule_end'] ?? null), ' – ');
         } else {
-          $time = !empty($r['actual_start']) ? ('Siden ' . fmt_dt((string)$r['actual_start'])) : '';
+          $time = !empty($r['actual_start']) ? fmt_dt((string)$r['actual_start']) : '';
         }
 
-        $jiraKey   = (string)($r['jira_key'] ?? '');
-        $jiraSync  = (string)($r['jira_sync'] ?? 'not_linked');
-        $jiraProj  = trim((string)($r['jira_project_key'] ?? ''));
-        $jiraType  = trim((string)($r['jira_issuetype_id'] ?? ''));
-
-        $jiraBadge = match($jiraSync) {
-          'linked'     => 'success',
-          'pending'    => 'warning',
-          'error'      => 'danger',
-          'not_linked' => 'secondary',
-          default      => 'secondary'
-        };
-
-        $jiraMetaLine = '';
-        if ($jiraProj !== '' || $jiraType !== '') {
-          $parts = [];
-          if ($jiraProj !== '') $parts[] = 'Proj: ' . $jiraProj;
-          if ($jiraType !== '') $parts[] = 'Type: ' . $jiraType;
-          $jiraMetaLine = implode(' · ', $parts);
-        }
+        $jiraKey  = (string)($r['jira_key'] ?? '');
+        $jiraSync = (string)($r['jira_sync'] ?? 'not_linked');
 
         $updatedAt = (string)($r['updated_at'] ?? '');
-        $sev = (string)($r['severity'] ?? '');
-        $affected = (int)($r['affected_customers'] ?? 0);
         ?>
         <tr data-event-id="<?= $id ?>"
             data-status="<?= esc($status) ?>"
             data-type="<?= esc($type) ?>"
-            style="cursor:pointer"
             onclick="window.location='/?page=events_view&id=<?= $id ?>'">
 
+          <!-- Status + type -->
           <td>
-            <span class="badge bg-<?= badge_class_status($status) ?> js-status-badge"
-                  data-status-key="<?= esc($status) ?>"><?= esc(status_label_no($status)) ?></span>
-            <?php if ($sev !== ''): ?>
-              <span class="badge bg-dark ms-1 js-severity-badge"><?= esc($sev) ?></span>
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+              <span class="badge text-bg-<?= badge_class_status($status) ?> js-status-badge"
+                    data-status-key="<?= esc($status) ?>"><?= esc(status_label_no($status)) ?></span>
+              <span class="badge text-bg-<?= badge_class_type($type) ?>"><?= $type === 'planned' ? 'Planlagt' : 'Hendelse' ?></span>
+              <?php if ($sev !== ''): ?>
+                <span class="badge text-bg-dark"><?= esc($sev) ?></span>
+              <?php endif; ?>
+              <?php if ($jiraKey !== ''): ?>
+                <span class="ev-jira-pill text-bg-<?= $jiraSync === 'error' ? 'danger' : 'secondary' ?>-subtle border">
+                  <i class="bi bi-box-arrow-up-right" style="font-size:9px;"></i><?= esc($jiraKey) ?>
+                </span>
+              <?php endif; ?>
+            </div>
+          </td>
+
+          <!-- Tittel -->
+          <td>
+            <div class="fw-semibold lh-sm"><?= esc($titlePublic) ?></div>
+            <?php if ($titleInternal !== '' && $titleInternal !== $titlePublic): ?>
+              <div class="small text-muted mt-1"><?= esc($titleInternal) ?></div>
             <?php endif; ?>
           </td>
 
-          <td>
-            <span class="badge bg-<?= badge_class_type($type) ?> js-type-badge"><?= $type==='planned'?'Planlagt':'Hendelse' ?></span>
-          </td>
-
-          <td>
-            <div class="fw-semibold"><?= esc((string)($r['title_public'] ?? '')) ?></div>
-          </td>
-
-          <td class="text-end fw-semibold js-affected-cell"><?= $affected ?></td>
-
-          <td class="small js-time-cell"><?= esc($time) ?></td>
-
-          <td class="small">
-            <span class="badge bg-<?= $pubDash?'success':'secondary' ?>">KS</span>
-            <span class="badge bg-<?= $pubBot?'success':'secondary' ?>">Hkon</span>
-            <span class="badge bg-<?= $isPublic?'success':'secondary' ?>">Public</span>
-          </td>
-
-          <td class="small">
-            <div><span class="badge bg-<?= $jiraBadge ?>"><?= $jiraKey !== '' ? esc($jiraKey) : 'Ikke koblet' ?></span></div>
-            <?php if ($jiraMetaLine !== ''): ?>
-              <div class="text-muted small mt-1"><?= esc($jiraMetaLine) ?></div>
+          <!-- Tid -->
+          <td class="small text-muted js-time-cell">
+            <?php if ($type === 'planned'): ?>
+              <i class="bi bi-calendar3 me-1 opacity-50"></i><?= esc($time) ?>
+            <?php elseif ($time): ?>
+              <i class="bi bi-exclamation-circle me-1 text-danger opacity-75"></i>Siden <?= esc($time) ?>
             <?php endif; ?>
           </td>
 
+          <!-- Berørte kunder -->
+          <td class="text-center js-affected-cell">
+            <?php if ($affected > 0): ?>
+              <span class="badge text-bg-secondary"><?= $affected ?></span>
+            <?php else: ?>
+              <span class="text-muted small">—</span>
+            <?php endif; ?>
+          </td>
+
+          <!-- Distribusjon (KS / Hkon / Public) -->
+          <td class="text-center">
+            <span class="ev-dist-icon <?= $pubDash ? 'on text-success' : '' ?>" title="Kundesenter">KS</span>
+            <span class="ev-dist-icon <?= $pubBot  ? 'on text-primary' : '' ?>" title="Hkon">HK</span>
+            <span class="ev-dist-icon <?= $isPublic ? 'on text-warning' : '' ?>" title="Offentlig">PUB</span>
+          </td>
+
+          <!-- Oppdatert -->
           <td class="text-end small text-muted js-updated-cell"><?= esc(fmt_dt($updatedAt)) ?></td>
         </tr>
       <?php endforeach; ?>
       </tbody>
     </table>
   </div>
+  <div class="text-muted small mt-2 px-1">
+    <?= count($rows) ?> sak<?= count($rows) !== 1 ? 'er' : '' ?>
+    <?= count($rows) >= 250 ? ' (maks 250 vises)' : '' ?>
+  </div>
 <?php endif; ?>
+
+<script>
+// Status-filterknapper
+(function(){
+  var form = document.getElementById('evFilterForm');
+  if (!form) return;
+
+  var defaultStatuses = <?= json_encode($defaultStatuses) ?>;
+  var currentSelected = <?= json_encode($selectedStatuses) ?>;
+  var showAll         = <?= $showAll ? 'true' : 'false' ?>;
+
+  var btns = form.querySelectorAll('.ev-filter-btn');
+
+  function getInputs() { return Array.from(form.querySelectorAll('.js-status-input')); }
+
+  function setSelected(arr) {
+    getInputs().forEach(function(i){ i.remove(); });
+    // Fjern show_all om den finnes
+    var saInp = form.querySelector('input[name="show_all"]');
+    if (saInp) saInp.remove();
+    // Skriv kun ut hvis det avviker fra default
+    var toWrite = (JSON.stringify(arr.slice().sort()) === JSON.stringify(defaultStatuses.slice().sort())) ? [] : arr;
+    toWrite.forEach(function(s) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'status[]'; inp.value = s; inp.className = 'js-status-input';
+      form.appendChild(inp);
+    });
+  }
+
+  function updateBtns(arr) {
+    btns.forEach(function(btn) {
+      btn.classList.toggle('active', arr.includes(btn.getAttribute('data-status')));
+    });
+  }
+
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var s = btn.getAttribute('data-status');
+      var sel = showAll ? defaultStatuses.slice() : currentSelected.slice();
+      showAll = false;
+      var idx = sel.indexOf(s);
+      idx === -1 ? sel.push(s) : sel.splice(idx, 1);
+      currentSelected = sel;
+      setSelected(sel);
+      updateBtns(sel);
+      form.submit();
+    });
+  });
+})();
+</script>
 
 <script>
 (function(){

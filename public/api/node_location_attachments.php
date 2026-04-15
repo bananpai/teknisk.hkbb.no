@@ -15,13 +15,14 @@ set_error_handler(function ($severity, $message, $file, $line) {
 register_shutdown_function(function () {
     $err = error_get_last();
     if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('node_location_attachments fatal: ' . ($err['message'] ?? 'unknown') . ' in ' . ($err['file'] ?? '') . ':' . ($err['line'] ?? ''));
         if (ob_get_length()) { @ob_clean(); }
         if (!headers_sent()) {
             http_response_code(500);
             header('Content-Type: application/json; charset=utf-8');
             header('Cache-Control: no-store');
         }
-        echo json_encode(['ok' => false, 'error' => 'Fatal error: ' . ($err['message'] ?? 'unknown')], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['ok' => false, 'error' => 'En intern feil oppstod.'], JSON_UNESCAPED_UNICODE);
     }
 });
 

@@ -18,18 +18,32 @@
 declare(strict_types=1);
 
 /* -------------------------------
+   Bootstrap
+-------------------------------- */
+$_autoload = realpath(__DIR__ . '/../../../vendor/autoload.php');
+if ($_autoload && is_file($_autoload)) {
+    require_once $_autoload;
+}
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+// Krev innlogget sesjon
+if (empty($_SESSION['username'])) {
+    http_response_code(401);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Ikke autentisert.';
+    exit;
+}
+
+/* -------------------------------
    Optional: bruk appens PDO-helper hvis den finnes
 -------------------------------- */
 $pdo = null;
-
-// Prøv å laste prosjektets bootstrap for pdo() hvis tilgjengelig
-$bootstrap = __DIR__ . '/../../../core/bootstrap.php';
-if (is_file($bootstrap)) {
-    require_once $bootstrap;
-}
-if (function_exists('pdo')) {
+if (class_exists('\App\Database')) {
     try {
-        $pdo = pdo();
+        $pdo = \App\Database::getConnection();
     } catch (Throwable $e) {
         $pdo = null;
     }
@@ -40,11 +54,17 @@ if (function_exists('pdo')) {
 -------------------------------- */
 $apiUrlBase = 'https://netbox.hkbb.no/api/dcim/sites/';
 
-// Token (anbefalt: flytt til config/miljøvariabel i produksjon)
-$token = 'b32e6cc0781eee3c332ea1730c671c3be2990ea6';
+// Token fra .env (NETBOX_TOKEN)
+$token = (string)($_ENV['NETBOX_TOKEN'] ?? getenv('NETBOX_TOKEN') ?: '');
+if ($token === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'NETBOX_TOKEN er ikke satt i .env';
+    exit;
+}
 
-// Sett til true for å ignorere self-signed TLS (USIKKERT)
-$insecureSkipTlsVerify = true;
+// TLS-verifisering – sett NETBOX_SKIP_TLS_VERIFY=true i .env kun for intern test
+$insecureSkipTlsVerify = strtolower((string)($_ENV['NETBOX_SKIP_TLS_VERIFY'] ?? getenv('NETBOX_SKIP_TLS_VERIFY') ?: 'false')) === 'true';
 
 // NetBox paging
 $perPage = 200;

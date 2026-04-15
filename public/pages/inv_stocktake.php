@@ -39,7 +39,6 @@ if ($username === '') {
 }
 
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') $isAdmin = true;
 
 // Finn user_id + roller
 $currentUserId = 0;
