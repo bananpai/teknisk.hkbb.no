@@ -70,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_2fa'])) {
 
     // Nullstill session-flagg
     $_SESSION['twofa_verified'] = false;
-    $_SESSION['twofa_secret']   = null;
 
     // Oppdater lokale variabler for visning
     $twoFaEnabled      = false;

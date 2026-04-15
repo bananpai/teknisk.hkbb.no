@@ -1081,10 +1081,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $typeLabel = ((string)$event['type'] === 'planned') ? 'Endring' : 'Hendelse';
 $typeBadge = ((string)$event['type'] === 'planned') ? 'primary' : 'danger';
 
-$statusLabel = (string)($event['status'] ?? '');
-if ($statusLabel === 'scheduled') $statusLabel = 'Planlagt';
-else if ($statusLabel === 'in_progress') $statusLabel = 'Pågående';
-else if ($statusLabel === 'resolved') $statusLabel = 'Utført';
+$statusRaw = (string)($event['status'] ?? '');
+$statusLabel = match($statusRaw) {
+  'draft'       => 'Utkast',
+  'scheduled'   => 'Planlagt',
+  'in_progress' => 'Pågår',
+  'monitoring'  => 'Overvåker',
+  'resolved'    => 'Utført',
+  'cancelled'   => 'Avbrutt',
+  default       => $statusRaw,
+};
+$statusBadge = match($statusRaw) {
+  'draft'       => 'secondary',
+  'scheduled'   => 'info',
+  'in_progress' => 'danger',
+  'monitoring'  => 'warning',
+  'resolved'    => 'success',
+  'cancelled'   => 'dark',
+  default       => 'secondary',
+};
 
 $impactYesNo = ((int)($event['customer_impact'] ?? 0) === 1) ? 'Ja' : 'Nei';
 $affected = (int)($event['affected_customers'] ?? 0);
@@ -1118,28 +1133,51 @@ $affectedLpTotal = count_affected_leveransepunkt($pdo, $id);
 $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 
 ?>
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <div>
-    <div class="text-muted small">Sak #<?= (int)$event['id'] ?></div>
-    <h3 class="mb-0"><?= esc((string)$event['title_public']) ?></h3>
-    <div class="text-muted small">
-      <span class="badge bg-<?= $typeBadge ?>"><?= esc($typeLabel) ?></span>
-      <span class="badge bg-secondary"><?= esc($statusLabel) ?></span>
-      <span class="badge bg-<?= $impactYesNo==='Ja'?'danger':'success' ?>">Påvirkning: <?= esc($impactYesNo) ?></span>
-      <?php if ($affected > 0): ?> <span class="badge bg-dark"><?= (int)$affected ?> kunder</span><?php endif; ?>
-      <?php if ($sevBadgeText !== ''): ?> <span class="badge bg-dark"><?= esc($sevBadgeText) ?></span><?php endif; ?>
-      <?php if ($jiraKey !== ''): ?> <span class="badge bg-success">Jira: <?= esc($jiraKey) ?></span><?php endif; ?>
-      · Oppdatert: <?= esc(fmt_dt_out((string)($event['updated_at'] ?? ''))) ?>
+<!-- Sideheader -->
+<div class="mb-3">
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+    <div style="min-width:0;">
+      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+        <a href="/?<?= esc($routeKey) ?>=events" class="text-muted small text-decoration-none">
+          <i class="bi bi-arrow-left me-1"></i>Hendelser
+        </a>
+        <span class="text-muted small">/</span>
+        <span class="text-muted small">Sak #<?= (int)$event['id'] ?></span>
+      </div>
+      <h4 class="mb-1 fw-semibold" style="word-break:break-word;"><?= esc((string)$event['title_public']) ?></h4>
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+        <span class="badge text-bg-<?= $statusBadge ?>"><?= esc($statusLabel) ?></span>
+        <span class="badge text-bg-<?= $typeBadge ?>"><?= esc($typeLabel) ?></span>
+        <?php if ($sevBadgeText !== ''): ?>
+          <span class="badge text-bg-secondary"><?= esc($sevBadgeText) ?></span>
+        <?php endif; ?>
+        <?php if ($affected > 0): ?>
+          <span class="badge text-bg-dark"><i class="bi bi-people me-1"></i><?= (int)$affected ?> kunder</span>
+        <?php endif; ?>
+        <?php if ($jiraKey !== ''): ?>
+          <a class="badge text-bg-success text-decoration-none"
+             href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>"
+             target="_blank" rel="noopener">
+            <i class="bi bi-box-arrow-up-right me-1"></i><?= esc($jiraKey) ?>
+          </a>
+        <?php endif; ?>
+        <span class="text-muted small ms-1">
+          Oppdatert <?= esc(fmt_dt_out((string)($event['updated_at'] ?? ''))) ?>
+        </span>
+      </div>
     </div>
-  </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="/?<?= esc($routeKey) ?>=events">Tilbake</a>
-    <a class="btn btn-outline-info" href="<?= esc($mapUrl) ?>">Kart</a>
-    <?php if ($jiraKey !== ''): ?>
-      <a class="btn btn-outline-primary" href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>" target="_blank" rel="noopener">Åpne i Jira</a>
-    <?php elseif ($jiraUrl !== ''): ?>
-      <a class="btn btn-outline-primary" href="<?= esc($jiraUrl) ?>" target="_blank" rel="noopener">Åpne i Jira</a>
-    <?php endif; ?>
+    <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
+      <a class="btn btn-sm btn-outline-secondary" href="<?= esc($mapUrl) ?>">
+        <i class="bi bi-map me-1"></i>Kart
+      </a>
+      <?php if ($jiraKey !== ''): ?>
+        <a class="btn btn-sm btn-outline-primary"
+           href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>"
+           target="_blank" rel="noopener">
+          <i class="bi bi-box-arrow-up-right me-1"></i>Åpne i Jira
+        </a>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 
@@ -1171,8 +1209,8 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 
 <form method="post" class="card mb-3">
   <div class="card-header d-flex align-items-center justify-content-between">
-    <div>Sak</div>
-    <div class="text-muted small">Registrer + informer. Saksbehandling skjer i Jira.</div>
+    <span class="fw-semibold">Detaljer</span>
+    <span class="text-muted small">Saksbehandling skjer i Jira</span>
   </div>
 
   <div class="card-body">
@@ -1276,7 +1314,7 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
         <hr class="my-2">
         <div class="row g-3 align-items-end">
           <div class="col-12 col-md-6">
-            <label class="form-label">JIRA saksnummer</label>
+            <label class="form-label">Jira saksnummer</label>
             <input
               class="form-control"
               name="jira_issue_key"
@@ -1284,28 +1322,26 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
               <?= !$canWrite?'disabled':'' ?>
               placeholder="FTD-123"
             >
-            <div class="form-text">Når dette er satt vises knapp for å åpne saken i Jira.</div>
+            <div class="form-text">Koble saken manuelt til en eksisterende Jira-sak.</div>
           </div>
+          <input type="hidden" name="jira_issuetype_pick" value="<?= esc($jiraPick) ?>">
 
-          <div class="col-12 col-md-3">
-            <label class="form-label">IssueType ID</label>
-            <select class="form-select" name="jira_issuetype_pick" <?= !$canWrite?'disabled':'' ?>>
-              <option value="jira" <?= $jiraPick==='jira'?'selected':'' ?>>JIRA</option>
-              <option value="other" <?= $jiraPick==='other'?'selected':'' ?>>Annet</option>
-            </select>
-          </div>
-
-          <div class="col-12 col-md-3 d-grid">
+          <div class="col-12 col-md-6 d-flex align-items-end gap-2">
             <?php if ($jiraKey !== ''): ?>
-              <a class="btn btn-outline-primary" href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>" target="_blank" rel="noopener">Åpne i Jira</a>
-            <?php else: ?>
-              <button class="btn btn-outline-secondary" type="button" disabled>Åpne i Jira</button>
+              <a class="btn btn-outline-primary" href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>" target="_blank" rel="noopener">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Åpne i Jira
+              </a>
+            <?php elseif ($canWrite): ?>
+              <button class="btn btn-success" type="submit" name="action" value="create_jira"
+                      onclick="return confirm('Opprette ny sak i Jira?')">
+                <i class="bi bi-plus-lg me-1"></i>Opprett i Jira
+              </button>
             <?php endif; ?>
           </div>
 
           <?php if (!empty($jira['last_error'])): ?>
             <div class="col-12">
-              <div class="alert alert-danger mb-0"><?= esc((string)$jira['last_error']) ?></div>
+              <div class="alert alert-danger mb-0 small"><?= esc((string)$jira['last_error']) ?></div>
             </div>
           <?php endif; ?>
         </div>
@@ -1677,80 +1713,75 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 
 <!-- Oppdateringer -->
 <div class="card mb-3">
-  <div class="card-header">Oppdateringer</div>
+  <div class="card-header fw-semibold">Oppdateringer</div>
   <div class="card-body">
-    <form method="post" class="row g-2 mb-3">
+    <?php if ($canWrite): ?>
+    <form method="post" class="mb-3">
       <input type="hidden" name="csrf" value="<?= esc($csrf) ?>">
       <input type="hidden" name="action" value="add_update">
-
-      <div class="col-12 col-md-4">
-        <select class="form-select" name="visibility" <?= !$canWrite?'disabled':'' ?>>
-          <option value="public">Public</option>
-          <option value="internal">Internal</option>
+      <div class="mb-2">
+        <textarea class="form-control" name="message" rows="2"
+                  placeholder="Skriv en oppdatering…"></textarea>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" name="visibility" style="width:auto;">
+          <option value="public">Offentlig</option>
+          <option value="internal">Intern</option>
         </select>
-      </div>
-      <div class="col-12 col-md-6">
-        <input class="form-control" name="message" placeholder="Kort oppdatering..." <?= !$canWrite?'disabled':'' ?>>
-      </div>
-      <div class="col-12 col-md-2 d-grid">
-        <?php if ($canWrite): ?>
-          <button class="btn btn-outline-primary" type="submit">Legg til</button>
-        <?php else: ?>
-          <button class="btn btn-outline-secondary" type="button" disabled>Legg til</button>
-        <?php endif; ?>
+        <button class="btn btn-sm btn-primary" type="submit">
+          <i class="bi bi-send me-1"></i>Legg til
+        </button>
       </div>
     </form>
+    <?php endif; ?>
 
     <?php if (!$updates): ?>
-      <div class="text-muted">Ingen oppdateringer.</div>
+      <div class="text-muted small"><i class="bi bi-chat-left opacity-50 me-2"></i>Ingen oppdateringer ennå.</div>
     <?php else: ?>
-      <div class="list-group">
-        <?php foreach ($updates as $up): ?>
-          <div class="list-group-item">
-            <div class="d-flex align-items-center justify-content-between">
-              <div class="small text-muted">
-                <?= esc(fmt_dt_out((string)($up['created_at'] ?? ''))) ?> · <?= esc((string)($up['created_by'] ?? '')) ?>
-              </div>
-              <span class="badge bg-<?= ((string)$up['visibility']==='internal')?'secondary':'primary' ?>">
-                <?= esc((string)$up['visibility']) ?>
+      <div class="list-group list-group-flush">
+        <?php foreach ($updates as $up):
+          $vis = (string)($up['visibility'] ?? 'public');
+          $visLabel = $vis === 'internal' ? 'Intern' : 'Offentlig';
+          $visBadge = $vis === 'internal' ? 'secondary' : 'primary';
+        ?>
+          <div class="list-group-item px-0">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="small text-muted">
+                <?= esc(fmt_dt_out((string)($up['created_at'] ?? ''))) ?>
+                <?php if (!empty($up['created_by'])): ?>
+                  · <?= esc((string)$up['created_by']) ?>
+                <?php endif; ?>
               </span>
+              <span class="badge text-bg-<?= $visBadge ?> fw-normal"><?= $visLabel ?></span>
             </div>
-            <div class="mt-2" style="white-space:pre-wrap;"><?= esc((string)($up['message'])) ?></div>
+            <div style="white-space:pre-wrap;" class="small"><?= esc((string)($up['message'])) ?></div>
           </div>
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
-
   </div>
 </div>
 
-<?php if ($canWrite): ?>
-  <div class="mt-3">
-    <form method="post" class="d-flex gap-2">
-      <input type="hidden" name="csrf" value="<?= esc($csrf) ?>">
-      <input type="hidden" name="action" value="create_jira">
-      <?php if ($jiraKey !== ''): ?>
-        <button class="btn btn-success" type="button" disabled>Allerede koblet til Jira</button>
-      <?php else: ?>
-        <button class="btn btn-success" type="submit" onclick="return confirm('Opprette sak i Jira?')">Opprett i Jira</button>
-      <?php endif; ?>
-    </form>
-    <div class="form-text mt-2">Opprett i Jira brukes bare hvis “IssueType ID” er satt til “JIRA” og Jira-credentials finnes i config.</div>
-  </div>
-<?php endif; ?>
 
 <?php if ($isAdmin): ?>
-  <div class="card border-danger mt-4">
-    <div class="card-header bg-danger text-white">Admin: Slett sak</div>
-    <div class="card-body">
-      <div class="text-muted mb-2">
-        Dette sletter saken permanent, inkludert berørte adresser, oppdateringer og Jira-integrasjon.
+  <details class="mt-4">
+    <summary class="text-danger small" style="cursor:pointer;user-select:none;">
+      <i class="bi bi-shield-exclamation me-1"></i>Farlig sone (admin)
+    </summary>
+    <div class="card border-danger mt-2">
+      <div class="card-body">
+        <p class="small text-muted mb-2">
+          Sletter saken permanent — inkludert berørte adresser, oppdateringer og Jira-integrasjon.
+          Kan ikke angres.
+        </p>
+        <form method="post" onsubmit="return confirm('Slette saken PERMANENT? Dette kan ikke angres.');">
+          <input type="hidden" name="csrf" value="<?= esc($csrf) ?>">
+          <input type="hidden" name="action" value="delete_event">
+          <button class="btn btn-sm btn-danger" type="submit">
+            <i class="bi bi-trash me-1"></i>Slett sak permanent
+          </button>
+        </form>
       </div>
-      <form method="post" onsubmit="return confirm('Slette saken PERMANENT? Dette kan ikke angres.');">
-        <input type="hidden" name="csrf" value="<?= esc($csrf) ?>">
-        <input type="hidden" name="action" value="delete_event">
-        <button class="btn btn-danger" type="submit">Slett sak permanent</button>
-      </form>
     </div>
-  </div>
+  </details>
 <?php endif; ?>

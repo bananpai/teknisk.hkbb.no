@@ -90,9 +90,6 @@ try {
 
 // Admin-fallback (legacy)
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') { // legacy/backdoor beholdt hvis dere vil fjerne senere
-    $isAdmin = true;
-}
 
 // Hent roller/perms fra session først (kan være tomt)
 $roles = normalize_list($_SESSION['roles'] ?? null);

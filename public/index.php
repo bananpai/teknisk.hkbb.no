@@ -334,9 +334,6 @@ $dbTwoFa = $twoFaStorage->loadTwoFa($username); // ['enabled' => bool, 'secret' 
 $twoFaEnabledAccount = !empty($dbTwoFa['enabled']);
 $twoFaSecret         = $dbTwoFa['secret'] ?? null;
 
-// legg secret i sesjonen også (kan være nyttig til feilsøking)
-$_SESSION['twofa_secret'] = $twoFaSecret;
-
 // Hvis kontoen ikke har aktiv 2FA i databasen → tving nytt oppsett
 if (!$twoFaEnabledAccount) {
     $_SESSION['twofa_verified'] = false;
@@ -397,9 +394,7 @@ if ($twoFaVerifiedSession) {
             $totp->setLabel('Teknisk (' . $username . ')');
             $totp->setIssuer('Teknisk');
 
-            $twoFaSecret              = $totp->getSecret();
-            $_SESSION['twofa_secret'] = $twoFaSecret;
-
+            $twoFaSecret = $totp->getSecret();
             $twoFaStorage->saveTwoFa($username, false, $twoFaSecret);
         } else {
             $totp = TOTP::create($twoFaSecret);
@@ -793,6 +788,19 @@ if ($page === 'billing_invoice_print') {
         require $contentFile;
     }
     exit;
+}
+
+// Hvis minside sender et tema-POST må $currentTheme settes FØR header.php
+// inkluderes, ellers bruker header.php det gamle temaet fra DB.
+if ($page === 'minside'
+    && $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['save_appearance'])
+) {
+    $preTheme = strtolower(preg_replace('~[^a-z]~', '', trim((string)($_POST['theme'] ?? ''))));
+    if ($preTheme !== '') {
+        $currentTheme = $preTheme;
+    }
+    unset($preTheme);
 }
 
 require __DIR__ . '/inc/header.php';

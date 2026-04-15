@@ -37,9 +37,6 @@ try {
 
     // Admin-sjekk
     $isAdmin = $_SESSION['is_admin'] ?? false;
-    if ($username === 'rsv') {
-        $isAdmin = true;
-    }
     if (!$isAdmin) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'Ingen tilgang.']);
@@ -142,7 +139,8 @@ try {
     echo json_encode(['ok' => true]);
     exit;
 } catch (\Throwable $e) {
+    error_log('logistikk_categories_move error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['ok' => false, 'error' => 'En intern feil oppstod. Prøv igjen.']);
     exit;
 }

@@ -333,172 +333,245 @@ $canDeleteImages = bildekart_user_can_delete_images();
       line-height: 1.2;
     }
 
-    .marker-cluster { filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+    /* ── Cluster-markører ── */
+    .marker-cluster { filter: drop-shadow(0 2px 8px rgba(0,0,0,.30)); }
     .marker-cluster div {
       border-radius: 999px !important;
-      border: 3px solid rgba(255,255,255,.92);
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,.18);
+      border: 3px solid rgba(255,255,255,.95);
       font-weight: 800;
+      letter-spacing: -.5px;
     }
-
     .marker-cluster.cluster-mapped div {
-      background: rgba(22, 163, 74, .92) !important;
+      background: linear-gradient(135deg,#22c55e,#16a34a) !important;
       color: #fff !important;
-      text-shadow: 0 1px 1px rgba(0,0,0,.28);
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
     }
-
     .marker-cluster.cluster-unassigned div {
-      background: rgba(249, 115, 22, .92) !important;
+      background: linear-gradient(135deg,#fb923c,#ea580c) !important;
       color: #fff !important;
-      text-shadow: 0 1px 1px rgba(0,0,0,.28);
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
     }
-
-    .marker-cluster-small div { font-size: 13px; }
+    .marker-cluster-small div  { font-size: 13px; }
     .marker-cluster-medium div { font-size: 14px; }
-    .marker-cluster-large div { font-size: 15px; }
+    .marker-cluster-large div  { font-size: 15px; }
 
-    .result-badge {
-      font-variant-numeric: tabular-nums;
-    }
+    .result-badge { font-variant-numeric: tabular-nums; }
 
+    /* ── Enkelt-markør (høyzoom) ── */
     .photo-group-wrap {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      transform: translateY(-6px);
+      gap: 0;
+      cursor: pointer;
     }
 
     .photo-group-icon {
       position: relative;
-      width: 42px;
-      height: 42px;
-      border-radius: 999px;
-      border: 2px solid #fff;
-      box-shadow: 0 3px 12px rgba(0,0,0,.28);
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 14px rgba(0,0,0,.30), 0 1px 3px rgba(0,0,0,.18);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
       color: #fff;
       user-select: none;
+      transition: transform .12s ease, box-shadow .12s ease;
     }
-
+    .photo-group-icon:hover {
+      transform: scale(1.10);
+      box-shadow: 0 6px 20px rgba(0,0,0,.36), 0 2px 6px rgba(0,0,0,.18);
+    }
     .photo-group-icon.mapped {
-      background: #16a34a;
+      background: linear-gradient(145deg, #22c55e, #15803d);
     }
-
     .photo-group-icon.unassigned {
-      background: #f97316;
+      background: linear-gradient(145deg, #fb923c, #c2410c);
     }
 
+    /* SVG ikon inne i markøren */
     .photo-group-glyph {
-      font-size: 20px;
-      line-height: 1;
-      transform: translateY(-1px);
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+      display: block;
+      flex-shrink: 0;
     }
 
+    /* Teller-badge øverst til høyre */
     .photo-group-count {
       position: absolute;
-      right: -6px;
-      top: -6px;
-      min-width: 22px;
-      height: 22px;
-      padding: 0 6px;
+      right: -7px;
+      top: -7px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
       border-radius: 999px;
       background: #0f172a;
       color: #fff;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
-      line-height: 22px;
+      line-height: 20px;
       text-align: center;
       border: 2px solid #fff;
+      white-space: nowrap;
     }
 
+    /* Liten pil/pin under sirkelen */
+    .photo-group-pin {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      margin-top: -1px;
+    }
+    .photo-group-icon.mapped  + .photo-group-pin { border-top: 8px solid #15803d; }
+    .photo-group-icon.unassigned + .photo-group-pin { border-top: 8px solid #c2410c; }
+
+    /* Etikett under pin */
     .photo-group-label {
-      max-width: 180px;
-      padding: 2px 8px;
+      max-width: 160px;
+      margin-top: 5px;
+      padding: 2px 9px;
       border-radius: 999px;
-      background: rgba(255,255,255,.96);
-      border: 1px solid rgba(15,23,42,.10);
-      box-shadow: 0 2px 8px rgba(0,0,0,.14);
+      background: rgba(255,255,255,.97);
+      border: 1px solid rgba(15,23,42,.12);
+      box-shadow: 0 2px 8px rgba(0,0,0,.13);
       color: #0f172a;
-      font-size: 12px;
-      line-height: 1.2;
+      font-size: 11px;
       font-weight: 600;
-      text-align: center;
+      line-height: 1.3;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
+    /* ── Popup ── */
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.10);
+      border: 1px solid rgba(15,23,42,.07);
+      padding: 0;
+      overflow: hidden;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      width: auto !important;
+    }
+    .leaflet-popup-tip-container { margin-top: -1px; }
+
+    .popup-inner {
+      padding: 14px 14px 12px;
+    }
+
+    .popup-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .popup-header-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .popup-header-icon.mapped     { background: #dcfce7; color: #15803d; }
+    .popup-header-icon.unassigned { background: #ffedd5; color: #c2410c; }
+    .popup-header-icon svg { width: 16px; height: 16px; fill: currentColor; }
+
+    .popup-header-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .popup-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .popup-subtitle {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .popup-count-badge {
+      flex-shrink: 0;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
     .popup-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 10px;
-      min-width: min(72vw, 560px);
-      max-width: min(72vw, 560px);
-      max-height: 52vh;
-      overflow: auto;
+      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+      gap: 8px;
+      max-width: min(calc(100vw - 90px), 560px);
+      max-height: 48vh;
+      overflow-y: auto;
+      overflow-x: hidden;
       padding-right: 2px;
     }
 
     .popup-thumb-btn {
       appearance: none;
-      border: 1px solid #d1d5db;
-      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      background: #f8fafc;
       border-radius: 10px;
-      padding: 6px;
+      padding: 5px;
       text-align: left;
       cursor: pointer;
-      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+      transition: transform .10s ease, box-shadow .10s ease, border-color .10s ease;
       width: 100%;
     }
-
     .popup-thumb-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,.12);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,.12);
       border-color: #94a3b8;
+      background: #fff;
     }
-
     .popup-thumb-btn img {
       width: 100%;
       aspect-ratio: 1 / 1;
       object-fit: cover;
-      border-radius: 8px;
+      border-radius: 7px;
       display: block;
-      background: #e5e7eb;
+      background: #e2e8f0;
       pointer-events: none;
     }
-
     .popup-thumb-meta {
-      margin-top: 6px;
-      font-size: 11px;
-      line-height: 1.25;
-      color: #475569;
+      margin-top: 5px;
+      font-size: 10px;
+      line-height: 1.3;
+      color: #64748b;
       pointer-events: none;
-    }
-
-    .popup-headline {
-      font-size: 13px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 8px;
-    }
-
-    .leaflet-popup-content {
-      margin: 12px;
-    }
-
-    .leaflet-popup-content-wrapper {
-      border-radius: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .popup-empty {
-      min-width: 220px;
+      padding: 12px 4px;
+      min-width: 200px;
       color: #64748b;
       font-size: 13px;
+      text-align: center;
     }
 
     .viewer-map-panel {
@@ -661,13 +734,60 @@ $canDeleteImages = bildekart_user_can_delete_images();
   const CAN_DELETE_IMAGES = <?= $canDeleteImages ? 'true' : 'false' ?>;
 
   const map = L.map('map', { preferCanvas: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+  const layerOsm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 20,
-    attribution: '&copy; OpenStreetMap',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     updateWhenZooming: false,
     updateWhenIdle: true,
     keepBuffer: 4
-  }).addTo(map);
+  });
+
+  const layerFoto = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 20,
+    attribution: 'Flyfoto &copy; Esri',
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
+  });
+
+  const layerTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 20,
+    attribution: 'Topokart &copy; Esri',
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
+  });
+
+  const layerTopoDetail = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>)',
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
+  });
+
+  const layerGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16,
+    attribution: 'Gråkart &copy; Esri',
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 4
+  });
+
+  layerOsm.addTo(map);
+
+  L.control.layers(
+    {
+      'Kart (OSM)':    layerOsm,
+      'Flyfoto':       layerFoto,
+      'Topokart':      layerTopo,
+      'Topo detaljert (OpenTopoMap)': layerTopoDetail,
+      'Gråkart':       layerGray,
+    },
+    {},
+    { position: 'topright', collapsed: true }
+  ).addTo(map);
 
   map.setView([59.41, 5.27], 10);
 
@@ -822,39 +942,61 @@ $canDeleteImages = bildekart_user_can_delete_images();
     const label = group.find(d => (d.node_name || '').trim() !== '')?.node_name || '';
     const statusClass = hasUnassigned ? 'unassigned' : 'mapped';
     const count = group.length;
-    const glyph = hasUnassigned ? '📷' : '🏠';
+
+    // Camera icon for unassigned, location-pin icon for mapped
+    const svgUnassigned = `<svg class="photo-group-glyph" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 3L7.17 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    </svg>`;
+    const svgMapped = `<svg class="photo-group-glyph" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+    </svg>`;
 
     const html = `
       <div class="photo-group-wrap">
         <div class="photo-group-icon ${statusClass}" title="Åpne bilder">
-          <span class="photo-group-glyph">${glyph}</span>
+          ${hasUnassigned ? svgUnassigned : svgMapped}
           <span class="photo-group-count">${count}</span>
         </div>
+        <div class="photo-group-pin"></div>
         ${label ? `<div class="photo-group-label">${escHtml(label)}</div>` : ''}
       </div>
     `;
 
+    // Icon is 46px circle + 8px pin = 54px total height; anchor at bottom of pin
+    const totalH = label ? 74 : 54;
     return L.divIcon({
       className: '',
       html,
-      iconSize: [54, label ? 64 : 44],
-      iconAnchor: [27, 22],
-      popupAnchor: [0, -20]
+      iconSize: [54, totalH],
+      iconAnchor: [27, label ? 62 : 54],
+      popupAnchor: [0, label ? -64 : -56]
     });
   }
 
   function popupHtmlForGroup(group) {
     if (!group.length) {
-      return `<div class="popup-empty">Ingen bilder i denne gruppen.</div>`;
+      return `<div class="popup-inner"><div class="popup-empty">Ingen bilder i denne gruppen.</div></div>`;
     }
 
+    const hasUnassigned = group.some(d => !isMappedToNode(d));
+    const statusClass = hasUnassigned ? 'unassigned' : 'mapped';
+
     const title = (group.find(d => (d.node_name || '').trim() !== '')?.node_name || '')
-      || (group.some(d => !isMappedToNode(d)) ? 'Bilder uten node' : 'Bilder');
+      || (hasUnassigned ? 'Bilder uten node' : 'Bilder');
 
     const first = group[0];
     const subtitleParts = [];
     if (first.city) subtitleParts.push(first.city);
-    subtitleParts.push(`${group.length} bilde${group.length === 1 ? '' : 'r'}`);
+    if (first.postnr) subtitleParts.push(first.postnr);
+
+    const countLabel = `${group.length} bilde${group.length === 1 ? '' : 'r'}`;
+
+    const svgUnassigned = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 3L7.17 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    </svg>`;
+    const svgMapped = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+    </svg>`;
 
     const groupKeys = group.map(itemKey).join('|');
 
@@ -878,8 +1020,17 @@ $canDeleteImages = bildekart_user_can_delete_images();
     }).join('');
 
     return `
-      <div class="popup-headline">${escHtml(title)} <span class="text-muted fw-normal">• ${escHtml(subtitleParts.join(' • '))}</span></div>
-      <div class="popup-grid">${thumbs}</div>
+      <div class="popup-inner">
+        <div class="popup-header">
+          <div class="popup-header-icon ${statusClass}">${hasUnassigned ? svgUnassigned : svgMapped}</div>
+          <div class="popup-header-text">
+            <div class="popup-title">${escHtml(title)}</div>
+            ${subtitleParts.length ? `<div class="popup-subtitle">${escHtml(subtitleParts.join(', '))}</div>` : ''}
+          </div>
+          <span class="popup-count-badge">${countLabel}</span>
+        </div>
+        <div class="popup-grid">${thumbs}</div>
+      </div>
     `;
   }
 
@@ -953,56 +1104,9 @@ $canDeleteImages = bildekart_user_can_delete_images();
     map.flyTo([lat, lon], preferredZoom, { duration: 0.45 });
   }
 
-  async function openStableMarkerPopup(marker) {
+  function openStableMarkerPopup(marker) {
     if (!marker) return;
-
-    try {
-      const latlng = marker.getLatLng();
-      const point = map.latLngToContainerPoint(latlng);
-      const mapSize = map.getSize();
-
-      const popupWidth = Math.min(620, Math.max(340, Math.floor(mapSize.x * 0.62)));
-      const popupHeight = Math.min(Math.max(240, Math.floor(mapSize.y * 0.52)), 420);
-
-      const leftPad = 24;
-      const rightPad = 24;
-      const bottomPad = 24;
-      const topPad = 24;
-
-      const popupLeft = point.x - (popupWidth / 2);
-      const popupRight = point.x + (popupWidth / 2);
-      const popupTop = point.y - popupHeight - 42;
-      const popupBottom = point.y - 8;
-
-      let dx = 0;
-      let dy = 0;
-
-      if (popupLeft < leftPad) {
-        dx = popupLeft - leftPad;
-      } else if (popupRight > (mapSize.x - rightPad)) {
-        dx = popupRight - (mapSize.x - rightPad);
-      }
-
-      if (popupTop < topPad) {
-        dy = popupTop - topPad;
-      } else if (popupBottom > (mapSize.y - bottomPad)) {
-        dy = popupBottom - (mapSize.y - bottomPad);
-      }
-
-      if (dx !== 0 || dy !== 0) {
-        map.panBy([dx, dy], {
-          animate: true,
-          duration: 0.22,
-          easeLinearity: 0.25
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 240));
-      }
-
-      marker.openPopup();
-    } catch (_) {
-      try { marker.openPopup(); } catch (__){}
-    }
+    try { marker.openPopup(); } catch (_) {}
   }
 
   const markers = [];
@@ -1641,27 +1745,31 @@ $canDeleteImages = bildekart_user_can_delete_images();
       m.bindPopup(popupHtmlForGroup(group), {
         maxWidth: 620,
         closeButton: true,
-        autoPan: false,
-        keepInView: false,
+        autoPan: true,
+        autoPanPadding: [30, 30],
+        keepInView: true,
         autoClose: true,
         closeOnClick: false
       });
 
-      m.on('click', async () => {
+      m.on('click', () => {
         if (keys.length === 1) {
           openViewerByKey(keys[0]);
         } else {
-          await openStableMarkerPopup(m);
+          openStableMarkerPopup(m);
         }
       });
 
       m.on('popupopen', (ev) => {
+        onPopupOpen();
         const popupRoot = ev.popup.getElement();
         if (popupRoot) {
           L.DomEvent.disableClickPropagation(popupRoot);
           L.DomEvent.disableScrollPropagation(popupRoot);
         }
       });
+
+      m.on('popupclose', onPopupClose);
 
       highZoomLayer.addLayer(m);
     }
@@ -1685,21 +1793,23 @@ $canDeleteImages = bildekart_user_can_delete_images();
         m.bindPopup(popupHtmlForGroup(group), {
           maxWidth: 620,
           closeButton: true,
-          autoPan: false,
-          keepInView: false,
+          autoPan: true,
+          autoPanPadding: [30, 30],
+          keepInView: true,
           autoClose: true,
           closeOnClick: false
         });
 
-        m.on('click', async () => {
+        m.on('click', () => {
           if (keys.length === 1) {
             openViewerByKey(keys[0]);
           } else {
-            await openStableMarkerPopup(m);
+            openStableMarkerPopup(m);
           }
         });
 
         m.on('popupopen', (ev) => {
+          onPopupOpen();
           const popupRoot = ev.popup.getElement();
           if (popupRoot) {
             L.DomEvent.disableClickPropagation(popupRoot);
@@ -1707,18 +1817,41 @@ $canDeleteImages = bildekart_user_can_delete_images();
           }
         });
 
+        m.on('popupclose', onPopupClose);
+
         highZoomLayer.addLayer(m);
       }
     }
   }
 
   let refreshTimer = null;
+  let _popupOpen = false;
+  let _pendingRefresh = false;
+
   function scheduleRefresh() {
+    if (_popupOpen) {
+      // Marker refresh til popup lukkes
+      _pendingRefresh = true;
+      return;
+    }
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => {
       refreshTimer = null;
       renderHighZoomGroups();
     }, 80);
+  }
+
+  function onPopupOpen() {
+    _popupOpen = true;
+    _pendingRefresh = false;
+  }
+
+  function onPopupClose() {
+    _popupOpen = false;
+    if (_pendingRefresh) {
+      _pendingRefresh = false;
+      scheduleRefresh();
+    }
   }
 
   map.on('zoomend', scheduleRefresh);

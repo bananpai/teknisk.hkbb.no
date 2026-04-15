@@ -24,7 +24,6 @@ $pdo = Database::getConnection();
 // Rolle-sjekk (user_roles) + bakoverkompatibel admin-fallback
 // ---------------------------------------------------------
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') $isAdmin = true;
 
 // Hent current user_id + roller
 $currentUserId = 0;

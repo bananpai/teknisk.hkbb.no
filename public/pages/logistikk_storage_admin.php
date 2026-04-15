@@ -46,9 +46,6 @@ try {
 // Rolle-sjekk (user_roles) + bakoverkompatibel admin-fallback
 // ---------------------------------------------------------
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') {
-    $isAdmin = true;
-}
 
 $currentUserId = 0;
 $currentRoles  = [];

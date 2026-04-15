@@ -8,9 +8,6 @@ use App\Database;
 // ---------------------------------------------------------
 $username = $_SESSION['username'] ?? '';
 $isAdmin  = $_SESSION['is_admin'] ?? false;
-if ($username === 'rsv') {
-    $isAdmin = true;
-}
 
 if (!$isAdmin) {
     http_response_code(403);

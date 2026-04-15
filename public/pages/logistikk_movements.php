@@ -17,9 +17,6 @@ if (!$username) {
 
 // Admin-sjekk (lese er OK for alle innloggede, men admin får ekstra)
 $isAdmin = $_SESSION['is_admin'] ?? false;
-if ($username === 'rsv') {
-    $isAdmin = true;
-}
 
 $pdo = Database::getConnection();
 

