@@ -15,7 +15,7 @@ if (!$username || !$fullname) {
 $pdo = Database::getConnection();
 
 // Finn user_id + 2FA-status
-$stmt = $pdo->prepare('SELECT id, twofa_enabled FROM users WHERE username = :username');
+$stmt = $pdo->prepare('SELECT id, twofa_enabled, email FROM users WHERE username = :username');
 $stmt->execute([':username' => $username]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -25,8 +25,9 @@ if (!$row) {
 }
 
 $userId        = (int)$row['id'];
-$twoFaEnabled  = (bool)($row['twofa_enabled'] ?? 0);          // Aktivert på kontoen?
-$twoFaVerified = !empty($_SESSION['twofa_verified']);         // Verifisert i denne økten?
+$twoFaEnabled  = (bool)($row['twofa_enabled'] ?? 0);
+$twoFaVerified = !empty($_SESSION['twofa_verified']);
+$currentEmail  = trim((string)($row['email'] ?? ''));
 
 $twoFaStatusBadge = $twoFaEnabled ? 'text-bg-success' : 'text-bg-warning';
 $twoFaStatusLabel = $twoFaEnabled ? '2FA aktivert' : '2FA ikke aktivert';
@@ -77,6 +78,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_2fa'])) {
     $twoFaStatusBadge  = 'text-bg-warning';
     $twoFaStatusLabel  = '2FA ikke aktivert';
     $twoFaResetMessage = '2-faktor er nå slått av. Neste gang 2FA kreves vil du bli bedt om å sette den opp på nytt.';
+}
+
+// ---------------------------------------------------------
+// E-post
+// ---------------------------------------------------------
+$emailMessage = null;
+$emailError   = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_email'])) {
+    $newEmail = trim((string)($_POST['email'] ?? ''));
+    if ($newEmail !== '' && !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+        $emailError = 'Ugyldig e-postadresse.';
+    } elseif (mb_strlen($newEmail, 'UTF-8') > 254) {
+        $emailError = 'E-postadressen er for lang.';
+    } else {
+        try {
+            $pdo->prepare("UPDATE users SET email = :email WHERE id = :id LIMIT 1")
+                ->execute([':email' => ($newEmail !== '' ? $newEmail : null), ':id' => $userId]);
+            $currentEmail = $newEmail;
+            $emailMessage = $newEmail !== '' ? 'E-postadresse lagret.' : 'E-postadresse fjernet.';
+        } catch (\Throwable $e) {
+            $emailError = 'Kunne ikke lagre e-post.';
+        }
+    }
 }
 
 // ---------------------------------------------------------
@@ -561,8 +586,42 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
                     Bruker: <code><?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></code>
                 </p>
 
-                <!-- ✅ Roller -->
-                <div class="mt-3">
+                <!-- E-post -->
+                <?php if ($emailMessage): ?>
+                    <div class="alert alert-success py-1 small mb-2"><?php echo htmlspecialchars($emailMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                <?php if ($emailError): ?>
+                    <div class="alert alert-danger py-1 small mb-2"><?php echo htmlspecialchars($emailError, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+
+                <form method="post" class="mb-3">
+                    <label class="form-label small mb-1">
+                        <i class="bi bi-envelope me-1"></i> E-postadresse
+                        <span class="text-muted">(brukes til kontraktvarsler)</span>
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <input type="email" name="email" class="form-control form-control-sm"
+                               value="<?php echo htmlspecialchars($currentEmail, ENT_QUOTES, 'UTF-8'); ?>"
+                               placeholder="din.epost@hkbb.no">
+                        <button type="submit" name="save_email" value="1" class="btn btn-sm btn-outline-primary">
+                            Lagre
+                        </button>
+                    </div>
+                    <?php if ($currentEmail === ''): ?>
+                        <div class="form-text text-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Ingen e-post registrert – du vil ikke motta kontraktvarsler.
+                        </div>
+                    <?php else: ?>
+                        <div class="form-text text-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Varsler sendes til denne adressen.
+                        </div>
+                    <?php endif; ?>
+                </form>
+
+                <!-- Roller -->
+                <div class="mt-1">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="small text-muted">Roller</div>
                         <?php if ($isAdminRole): ?>
@@ -588,8 +647,7 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
                 </div>
 
                 <p class="small text-muted mt-3 mb-0">
-                    Profilinformasjon hentes fra AD og kan ikke endres her.
-                    Ta kontakt med IT hvis noe ikke stemmer.
+                    Navn og brukernavn hentes fra AD og kan ikke endres her.
                 </p>
             </div>
         </aside>
