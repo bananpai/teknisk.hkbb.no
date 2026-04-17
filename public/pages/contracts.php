@@ -411,6 +411,7 @@ if ($hasTable) {
                 SELECT COUNT(*)
                   FROM `$table`
                  WHERE `$endCol` IS NOT NULL
+                   AND `$endCol` >= CURDATE()
                    AND `$endCol` <= DATE_ADD(CURDATE(), INTERVAL :d DAY)
             ");
             $stmt->execute([':d' => $days]);
@@ -422,6 +423,7 @@ if ($hasTable) {
                 SELECT COUNT(*)
                   FROM `$table`
                  WHERE `$renewCol` IS NOT NULL
+                   AND `$renewCol` >= CURDATE()
                    AND `$renewCol` <= DATE_ADD(CURDATE(), INTERVAL :d DAY)
             ");
             $stmt->execute([':d' => $days]);
@@ -433,6 +435,7 @@ if ($hasTable) {
                 SELECT COUNT(*)
                   FROM `$table`
                  WHERE `$kpiCol` IS NOT NULL
+                   AND `$kpiCol` >= CURDATE()
                    AND `$kpiCol` <= DATE_ADD(CURDATE(), INTERVAL :d DAY)
             ");
             $stmt->execute([':d' => $days]);
@@ -608,6 +611,11 @@ if ($hasTable) {
     </div>
 <?php endif; ?>
 
+<?php
+$alertExpires = $stats['expires30'] !== null && $stats['expires30'] > 0;
+$alertRenew   = $stats['renew30']   !== null && $stats['renew30']   > 0;
+$alertKpi     = $stats['kpi30']     !== null && $stats['kpi30']     > 0;
+?>
 <div class="row g-3 mb-3">
     <div class="col-12 col-md-3">
         <div class="card shadow-sm h-100">
@@ -622,39 +630,54 @@ if ($hasTable) {
     </div>
 
     <div class="col-12 col-md-3">
-        <div class="card shadow-sm h-100">
+        <a href="/?page=contracts_alerts&type=end" class="text-decoration-none">
+        <div class="card shadow-sm h-100 <?= $alertExpires ? 'border-danger border' : '' ?>">
             <div class="card-body">
-                <div class="text-muted small">Utløper ≤ <?= (int)$days ?> dager</div>
-                <div class="h4 mb-0">
+                <div class="text-muted small d-flex justify-content-between">
+                    <span>Utløper ≤ <?= (int)$days ?> dager</span>
+                    <?php if ($alertExpires): ?><i class="bi bi-exclamation-circle text-danger"></i><?php endif; ?>
+                </div>
+                <div class="h4 mb-0 <?= $alertExpires ? 'text-danger' : '' ?>">
                     <?= $stats['expires30'] === null ? '—' : (int)$stats['expires30'] ?>
                 </div>
                 <div class="small text-muted mt-2">Basert på sluttdato</div>
             </div>
         </div>
+        </a>
     </div>
 
     <div class="col-12 col-md-3">
-        <div class="card shadow-sm h-100">
+        <a href="/?page=contracts_alerts&type=renewal" class="text-decoration-none">
+        <div class="card shadow-sm h-100 <?= $alertRenew ? 'border-warning border' : '' ?>">
             <div class="card-body">
-                <div class="text-muted small">Fornyes ≤ <?= (int)$days ?> dager</div>
-                <div class="h4 mb-0">
+                <div class="text-muted small d-flex justify-content-between">
+                    <span>Fornyes ≤ <?= (int)$days ?> dager</span>
+                    <?php if ($alertRenew): ?><i class="bi bi-arrow-repeat text-warning"></i><?php endif; ?>
+                </div>
+                <div class="h4 mb-0 <?= $alertRenew ? 'text-warning' : '' ?>">
                     <?= $stats['renew30'] === null ? '—' : (int)$stats['renew30'] ?>
                 </div>
                 <div class="small text-muted mt-2">Basert på fornyelsesdato</div>
             </div>
         </div>
+        </a>
     </div>
 
     <div class="col-12 col-md-3">
-        <div class="card shadow-sm h-100">
+        <a href="/?page=contracts_alerts&type=kpi" class="text-decoration-none">
+        <div class="card shadow-sm h-100 <?= $alertKpi ? 'border-info border' : '' ?>">
             <div class="card-body">
-                <div class="text-muted small">KPI/indeks ≤ <?= (int)$days ?> dager</div>
-                <div class="h4 mb-0">
+                <div class="text-muted small d-flex justify-content-between">
+                    <span>KPI/indeks ≤ <?= (int)$days ?> dager</span>
+                    <?php if ($alertKpi): ?><i class="bi bi-graph-up-arrow text-info"></i><?php endif; ?>
+                </div>
+                <div class="h4 mb-0 <?= $alertKpi ? 'text-info' : '' ?>">
                     <?= $stats['kpi30'] === null ? '—' : (int)$stats['kpi30'] ?>
                 </div>
                 <div class="small text-muted mt-2">Basert på KPI-justeringsdato</div>
             </div>
         </div>
+        </a>
     </div>
 </div>
 

@@ -21,6 +21,8 @@
 // - contracts_change_log (valgfritt)
 
 use App\Database;
+use App\Mail\Mailer;
+use PHPMailer\PHPMailer\Exception as MailException;
 
 $username = $_SESSION['username'] ?? '';
 if ($username === '') {
@@ -293,6 +295,287 @@ if ($hasChangeLog) {
 }
 
 // ---------------------------------------------------------
+// CSRF
+// ---------------------------------------------------------
+if (empty($_SESSION['csrf_contracts_view'])) {
+    $_SESSION['csrf_contracts_view'] = bin2hex(random_bytes(16));
+}
+$viewCsrf = (string)$_SESSION['csrf_contracts_view'];
+
+// ---------------------------------------------------------
+// POST handler – test varsling
+// ---------------------------------------------------------
+$viewSuccess = null;
+$viewError   = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedCsrf = (string)($_POST['csrf'] ?? '');
+    if (!hash_equals($viewCsrf, $postedCsrf)) {
+        $viewError = 'Ugyldig token. Last siden på nytt og prøv igjen.';
+    } elseif (((string)($_POST['action'] ?? '')) === 'send_test_notification') {
+        try {
+            // Fetch sender display name
+            $senderDisplay = $username;
+            if ($hasUsers) {
+                $stSnd = $pdo->prepare("SELECT COALESCE(NULLIF(display_name,''), username) AS dn FROM users WHERE username = :u LIMIT 1");
+                $stSnd->execute([':u' => $username]);
+                $dn = (string)($stSnd->fetchColumn() ?: '');
+                if ($dn !== '') $senderDisplay = $dn;
+            }
+
+            // Build recipient list: owner + substitute + notify
+            $to = [];
+            if ($hasUsers && $ownerUsername !== '') {
+                $stOw = $pdo->prepare("SELECT email, COALESCE(NULLIF(display_name,''), username) AS dn FROM users WHERE username = :u AND is_active = 1 LIMIT 1");
+                $stOw->execute([':u' => $ownerUsername]);
+                $owRow = $stOw->fetch(\PDO::FETCH_ASSOC);
+                if ($owRow && trim((string)$owRow['email']) !== '') {
+                    $to[trim($owRow['email'])] = trim((string)$owRow['dn']);
+                }
+            }
+            if ($hasRecipients) {
+                $stRec = $pdo->prepare("
+                    SELECT u.email, COALESCE(NULLIF(u.display_name,''), u.username) AS dn
+                    FROM contracts_notify_recipients r
+                    JOIN users u ON u.id = r.user_id
+                    WHERE r.contract_id = :cid AND r.is_active = 1
+                      AND u.is_active = 1 AND u.email <> ''
+                ");
+                $stRec->execute([':cid' => $contractId]);
+                foreach ($stRec->fetchAll(\PDO::FETCH_ASSOC) as $rr) {
+                    $em = trim((string)$rr['email']);
+                    if ($em !== '') $to[$em] = trim((string)$rr['dn']);
+                }
+            }
+
+            if (empty($to)) {
+                throw new \RuntimeException('Ingen e-postadresser funnet. Sjekk at ansvarlig og mottakere har e-post registrert på Min side.');
+            }
+
+            // Build beautiful HTML email
+            $ctitle       = htmlspecialchars((string)($contract['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $cno          = htmlspecialchars((string)($contract['contract_no'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $cstatus      = htmlspecialchars((string)($contract['status'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $ctype        = htmlspecialchars((string)($contract['contract_type'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $cpNameLocal  = (string)($contract['counterparty'] ?? '');
+            if (!empty($contract['crm_counterparty_name'])) $cpNameLocal = (string)$contract['crm_counterparty_name'];
+            $ccp          = htmlspecialchars($cpNameLocal, ENT_QUOTES, 'UTF-8');
+            $fmtDate      = fn($d) => ($d && $d !== '') ? date('d.m.Y', strtotime($d)) : '–';
+            $cEndDate     = $fmtDate($contract['end_date'] ?? null);
+            $cRenewal     = $fmtDate($contract['renewal_date'] ?? null);
+            $cKpi         = $fmtDate($contract['kpi_adjust_date'] ?? null);
+            $cOwner       = htmlspecialchars($ownerDisplay, ENT_QUOTES, 'UTF-8');
+            $cSender      = htmlspecialchars($senderDisplay, ENT_QUOTES, 'UTF-8');
+
+            $baseUrl = rtrim((string)(getenv('APP_URL') ?: 'https://teknisk.hkbb.no'), '/');
+            $viewUrl = $baseUrl . '/?page=contracts_view&id=' . $contractId;
+            $editUrl = $baseUrl . '/?page=contracts_edit&id=' . $contractId;
+            $today   = date('d.m.Y');
+
+            $recipientNames = array_values($to);
+            $firstRecipient = count($recipientNames) === 1
+                ? htmlspecialchars($recipientNames[0], ENT_QUOTES, 'UTF-8')
+                : 'Hei';
+
+            $rowStyle   = 'padding:10px 16px;border-bottom:1px solid #e9ecef;';
+            $labelStyle = 'font-weight:600;color:#555;font-size:.88em;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;';
+            $valueStyle = 'color:#1a1a2e;font-size:.95em;';
+
+            // Pre-compute conditional HTML snippets (heredoc doesn't support ternary inside {})
+            $cnoHtml = $cno !== ''
+                ? "<div style='color:#6b7280;font-size:.83em;margin-top:3px;'>Avtalenr: $cno</div>"
+                : '';
+            $cstatusText  = $cstatus !== '' ? $cstatus : '–';
+            $ctypeRowHtml = $ctype !== ''
+                ? "<tr><td style='$rowStyle $labelStyle'>Avtaletype</td><td style='$rowStyle $valueStyle'>$ctype</td></tr>"
+                : '';
+            $ccpRowHtml = $ccp !== ''
+                ? "<tr><td style='$rowStyle $labelStyle'>Motpart</td><td style='$rowStyle $valueStyle'>$ccp</td></tr>"
+                : '';
+
+            $dateRows = '';
+            if ($contract['end_date'] ?? null) {
+                $ts   = strtotime((string)$contract['end_date']);
+                $days = $ts ? (int)round(($ts - strtotime('today')) / 86400) : null;
+                $urgency = '';
+                if ($days !== null) {
+                    $clr = $days <= 30 ? '#dc3545' : ($days <= 60 ? '#fd7e14' : '#198754');
+                    $urgency = " <span style='background:$clr;color:#fff;padding:2px 8px;border-radius:10px;font-size:.8em;margin-left:6px;'>"
+                               . ($days > 0 ? "om $days dager" : "i dag") . "</span>";
+                }
+                $dateRows .= "<tr>
+                  <td style='$rowStyle $labelStyle'>Sluttdato</td>
+                  <td style='$rowStyle $valueStyle'><strong>$cEndDate</strong>$urgency</td>
+                </tr>";
+            }
+            if ($contract['renewal_date'] ?? null) {
+                $ts   = strtotime((string)$contract['renewal_date']);
+                $days = $ts ? (int)round(($ts - strtotime('today')) / 86400) : null;
+                $urgency = '';
+                if ($days !== null) {
+                    $clr = $days <= 30 ? '#dc3545' : ($days <= 60 ? '#fd7e14' : '#198754');
+                    $urgency = " <span style='background:$clr;color:#fff;padding:2px 8px;border-radius:10px;font-size:.8em;margin-left:6px;'>"
+                               . ($days > 0 ? "om $days dager" : "i dag") . "</span>";
+                }
+                $dateRows .= "<tr>
+                  <td style='$rowStyle $labelStyle'>Fornyelsesdato</td>
+                  <td style='$rowStyle $valueStyle'><strong>$cRenewal</strong>$urgency</td>
+                </tr>";
+            }
+            if ($contract['kpi_adjust_date'] ?? null) {
+                $ts   = strtotime((string)$contract['kpi_adjust_date']);
+                $days = $ts ? (int)round(($ts - strtotime('today')) / 86400) : null;
+                $urgency = '';
+                if ($days !== null) {
+                    $clr = $days <= 30 ? '#dc3545' : ($days <= 60 ? '#fd7e14' : '#198754');
+                    $urgency = " <span style='background:$clr;color:#fff;padding:2px 8px;border-radius:10px;font-size:.8em;margin-left:6px;'>"
+                               . ($days > 0 ? "om $days dager" : "i dag") . "</span>";
+                }
+                $dateRows .= "<tr>
+                  <td style='$rowStyle $labelStyle'>KPI/indeksdato</td>
+                  <td style='$rowStyle $valueStyle'><strong>$cKpi</strong>$urgency</td>
+                </tr>";
+            }
+
+            $html = <<<HTML
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,Helvetica,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.10);">
+
+      <!-- Header -->
+      <tr>
+        <td style="background:linear-gradient(135deg,#0d6efd 0%,#0a58ca 100%);padding:28px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div style="color:#fff;font-size:1.15em;font-weight:700;letter-spacing:-.01em;">HKBB Teknisk</div>
+                <div style="color:rgba(255,255,255,.75);font-size:.85em;margin-top:2px;">Avtaler &amp; kontrakter</div>
+              </td>
+              <td align="right">
+                <span style="background:rgba(255,255,255,.2);color:#fff;padding:5px 14px;border-radius:20px;font-size:.82em;font-weight:600;letter-spacing:.03em;">PÅMINNELSE</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Greeting -->
+      <tr>
+        <td style="padding:32px 32px 8px;">
+          <p style="margin:0 0 6px;font-size:1.05em;color:#1a1a2e;font-weight:700;">Hei, $firstRecipient</p>
+          <p style="margin:0;color:#4a5568;line-height:1.65;font-size:.95em;">
+            Dette er en påminnelse om at følgende avtale bør ses over. Ta gjerne en titt på datoer og vilkår,
+            og sjekk om det er behov for fornyelse, justering av KPI-indeks eller andre oppfølgingstiltak.
+          </p>
+        </td>
+      </tr>
+
+      <!-- Contract card -->
+      <tr>
+        <td style="padding:20px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+
+            <!-- Contract title row -->
+            <tr>
+              <td colspan="2" style="background:#ebf2ff;padding:14px 16px;border-bottom:2px solid #bfdbfe;">
+                <div style="font-size:1.08em;font-weight:700;color:#1d4ed8;">$ctitle</div>
+                $cnoHtml
+              </td>
+            </tr>
+
+            <!-- Status / type -->
+            <tr>
+              <td style="$rowStyle $labelStyle width:38%;">Status</td>
+              <td style="$rowStyle $valueStyle">$cstatusText</td>
+            </tr>
+            $ctypeRowHtml
+            $ccpRowHtml
+            <tr>
+              <td style="$rowStyle $labelStyle">Ansvarlig</td>
+              <td style="$rowStyle $valueStyle">$cOwner</td>
+            </tr>
+
+            $dateRows
+
+          </table>
+        </td>
+      </tr>
+
+      <!-- Call to action -->
+      <tr>
+        <td style="padding:8px 32px 28px;">
+          <table cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding-right:12px;">
+                <a href="$viewUrl" style="display:inline-block;background:#0d6efd;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:700;font-size:.95em;">
+                  Åpne avtalen
+                </a>
+              </td>
+              <td>
+                <a href="$editUrl" style="display:inline-block;background:#ffffff;color:#0d6efd;padding:11px 22px;text-decoration:none;border-radius:6px;font-weight:700;font-size:.95em;border:2px solid #0d6efd;">
+                  Rediger
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Divider -->
+      <tr><td style="padding:0 32px;"><div style="border-top:1px solid #e9ecef;"></div></td></tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="padding:18px 32px;background:#f8fafc;">
+          <p style="margin:0;color:#9ca3af;font-size:.78em;line-height:1.5;">
+            Sendt manuelt fra <strong style="color:#6b7280;">HKBB Teknisk</strong> av <strong style="color:#6b7280;">$cSender</strong> · $today<br>
+            Har du spørsmål? Ta kontakt med den ansvarlige for avtalen.
+          </p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+
+</body>
+</html>
+HTML;
+
+            $subject = "[HKBB Teknisk] Avtale bør ses over: $ctitle";
+            $mailer  = new Mailer();
+            $mailer->send($to, $subject, $html);
+
+            $sentTo = implode(', ', array_keys($to));
+            $viewSuccess = 'Test-varsling sendt til: ' . htmlspecialchars($sentTo, ENT_QUOTES, 'UTF-8');
+
+            // Log it
+            if ($hasAlertLog) {
+                try {
+                    $pdo->prepare("INSERT INTO contracts_alert_log (contract_id, alert_type, alert_date, days_before, sent_to, sent_by, created_at) VALUES (:cid, 'test', CURDATE(), 0, :sent, :by, NOW())")
+                        ->execute([':cid' => $contractId, ':sent' => $sentTo, ':by' => $username]);
+                } catch (\Throwable $ignored) {}
+            }
+
+            // Refresh CSRF
+            $_SESSION['csrf_contracts_view'] = bin2hex(random_bytes(16));
+            $viewCsrf = (string)$_SESSION['csrf_contracts_view'];
+
+        } catch (MailException | \Throwable $e) {
+            $viewError = 'Kunne ikke sende varsling: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        }
+    }
+}
+
+// ---------------------------------------------------------
 // Derived fields
 // ---------------------------------------------------------
 $cpName = (string)($contract['counterparty'] ?? '');
@@ -339,6 +622,19 @@ $isActive = (int)($contract['is_active'] ?? 1) === 1;
     </a>
   </div>
 </div>
+
+<?php if ($viewSuccess): ?>
+  <div class="alert alert-success d-flex align-items-center gap-2">
+    <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+    <div><?= $viewSuccess ?></div>
+  </div>
+<?php endif; ?>
+<?php if ($viewError): ?>
+  <div class="alert alert-danger d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+    <div><?= $viewError ?></div>
+  </div>
+<?php endif; ?>
 
 <div class="row g-3">
   <!-- Left: main -->
@@ -505,6 +801,57 @@ $isActive = (int)($contract['is_active'] ?? 1) === 1;
             <?php if (!$hasNotifySet): ?><span class="text-muted">(tabellen contracts_notify_settings finnes ikke)</span><?php endif; ?>
           </div>
         <?php endif; ?>
+      </div>
+    </section>
+
+    <section class="card shadow-sm mb-3 border-primary-subtle">
+      <div class="card-header bg-primary-subtle py-2">
+        <div class="section-title text-primary-emphasis"><i class="bi bi-send-check"></i> Test varsling</div>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">
+          Send en test-e-post til ansvarlig og alle konfigurerte mottakere for denne avtalen.
+        </p>
+
+        <?php
+        // Collect who will receive the notification for display
+        $testRecipientLabels = [];
+        if ($ownerUsername !== '') {
+            $testRecipientLabels[] = '<i class="bi bi-person-check me-1"></i>' . h($ownerDisplay) . ' <span class="text-muted">(ansvarlig)</span>';
+        }
+        if ($substitute) {
+            $testRecipientLabels[] = '<i class="bi bi-person-gear me-1"></i>' . h($substitute['label']) . ' <span class="text-muted">(stedfortreder)</span>';
+        }
+        foreach ($notifyList as $lbl) {
+            $testRecipientLabels[] = '<i class="bi bi-bell me-1"></i>' . h($lbl);
+        }
+        ?>
+
+        <?php if (!empty($testRecipientLabels)): ?>
+          <div class="mb-3">
+            <div class="small fw-semibold mb-1 text-muted">Mottakere:</div>
+            <div class="d-flex flex-column gap-1">
+              <?php foreach ($testRecipientLabels as $lbl): ?>
+                <div class="small"><?= $lbl ?></div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php else: ?>
+          <div class="alert alert-warning py-2 small mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Ingen ansvarlig eller mottakere konfigurert. Legg til i <a href="/?page=contracts_edit&id=<?= (int)$contractId ?>">Rediger</a>.
+          </div>
+        <?php endif; ?>
+
+        <form method="post">
+          <input type="hidden" name="csrf"   value="<?= h($viewCsrf) ?>">
+          <input type="hidden" name="action" value="send_test_notification">
+          <button type="submit" class="btn btn-primary btn-sm w-100"
+                  <?= empty($testRecipientLabels) ? 'disabled' : '' ?>
+                  onclick="return confirm('Send test-varsling for «<?= h(addslashes($contract['title'] ?? '')) ?>» til alle mottakere?')">
+            <i class="bi bi-send me-1"></i> Send test-varsling
+          </button>
+        </form>
       </div>
     </section>
 
