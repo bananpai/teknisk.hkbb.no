@@ -1,14 +1,318 @@
-/* ─── Mørkt tema: quartz-base, dypere sidebar ─── */
+/* ================================================================
+   MØRKT TEMA – Profesjonell, mørk, strikt
+   Base: vanilla Bootstrap 5.3 med data-bs-theme="dark"
+   ================================================================ */
 
-:root {
-    /* Sidebar */
-    --ts-sidebar-bg: #0d1b2a;
-    --ts-sidebar-hover: rgba(255,255,255,0.08);
-    --ts-sidebar-active: rgba(255,255,255,0.13);
-    --ts-sidebar-text: rgba(203,213,225,0.9);
-    --ts-sidebar-border: rgba(255,255,255,0.06);
+/* ── Overrides på Bootstrap sin mørk-modus ── */
+[data-bs-theme="dark"] {
+    /* Primærfarge – litt lysere for lesbarhet på mørk bakgrunn */
+    --brand-500:     #3b82f6;
+    --brand-600:     #2563eb;
+    --brand-700:     #1d4ed8;
+    --brand-rgb:     59, 130, 246;
 
-    /* Topbar */
-    --ts-topbar-bg: #0d1b2a;
-    --ts-topbar-border: rgba(255,255,255,0.06);
+    /* Overflater */
+    --surface-0:     #1e293b;
+    --surface-1:     #0f172a;
+    --surface-2:     #162032;
+    --text-primary:  #e2e8f0;
+    --text-muted:    #7e97b2;
+    --border:        #2d3f54;
+
+    /* Bootstrap-overrides */
+    --bs-primary:           var(--brand-500);
+    --bs-primary-rgb:       var(--brand-rgb);
+    --bs-body-bg:           var(--surface-1);
+    --bs-body-color:        var(--text-primary);
+    --bs-secondary-color:   var(--text-muted);
+    --bs-tertiary-bg:       var(--surface-2);
+    --bs-border-color:      var(--border);
+    --bs-link-color:        var(--brand-500);
+    --bs-link-hover-color:  #60a5fa;
+    --bs-card-bg:           var(--surface-0);
+
+    /* Sidebar og topbar */
+    --ts-sidebar-bg:     #080f1a;
+    --ts-sidebar-hover:  rgba(255, 255, 255, 0.07);
+    --ts-sidebar-active: rgba(59, 130, 246, 0.2);
+    --ts-sidebar-text:   rgba(148, 178, 208, 0.95);
+    --ts-sidebar-border: rgba(255, 255, 255, 0.05);
+    --ts-topbar-bg:      #080f1a;
+    --ts-topbar-border:  rgba(255, 255, 255, 0.05);
+}
+
+/* ── Typografi ── */
+[data-bs-theme="dark"] body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+}
+
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+/* ── Knapper ── */
+[data-bs-theme="dark"] .btn {
+    font-weight: 500;
+}
+
+[data-bs-theme="dark"] .btn-primary {
+    --bs-btn-color:              #fff;
+    --bs-btn-bg:                 var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-600);
+    --bs-btn-hover-border-color: var(--brand-600);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-700);
+    --bs-btn-focus-shadow-rgb:   var(--brand-rgb);
+    --bs-btn-disabled-bg:        var(--brand-500);
+    --bs-btn-disabled-border-color: var(--brand-500);
+}
+
+[data-bs-theme="dark"] .btn-outline-primary {
+    --bs-btn-color:              var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-500);
+    --bs-btn-hover-border-color: var(--brand-500);
+}
+
+[data-bs-theme="dark"] .btn-secondary {
+    --bs-btn-bg:           #1e293b;
+    --bs-btn-border-color: var(--border);
+    --bs-btn-color:        var(--text-primary);
+    --bs-btn-hover-bg:     #2d3f54;
+    --bs-btn-hover-color:  var(--text-primary);
+}
+
+/* ── Kort ── */
+[data-bs-theme="dark"] .card {
+    background-color: var(--surface-0);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="dark"] .card-header {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 0.65rem 1rem;
+}
+
+[data-bs-theme="dark"] .card-footer {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Tabeller ── */
+[data-bs-theme="dark"] .table {
+    --bs-table-bg:         transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+    --bs-table-hover-bg:   rgba(59, 130, 246, 0.07);
+    --bs-table-border-color: var(--border);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+[data-bs-theme="dark"] .table thead th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background-color: rgba(255, 255, 255, 0.04);
+    border-bottom: 2px solid var(--border);
+}
+
+/* ── Skjema ── */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--surface-2);
+    border-color:     var(--border);
+    color:            var(--text-primary);
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--surface-2);
+    border-color:     var(--brand-500);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+    color: var(--text-primary);
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+[data-bs-theme="dark"] .form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+/* ── Input group ── */
+[data-bs-theme="dark"] .input-group-text {
+    background-color: var(--surface-2);
+    border-color:     var(--border);
+    color:            var(--text-muted);
+}
+
+/* ── Navigasjon ── */
+[data-bs-theme="dark"] .nav-pills .nav-link.active,
+[data-bs-theme="dark"] .nav-pills .show > .nav-link {
+    background-color: var(--brand-500);
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .nav-tabs {
+    --bs-nav-tabs-border-color: var(--border);
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+    background-color: var(--surface-0);
+    border-color: var(--border) var(--border) var(--surface-0);
+    color: var(--brand-500);
+    font-weight: 600;
+}
+
+/* ── Dropdown ── */
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: var(--surface-0);
+    border-color:     var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: var(--text-primary);
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-bs-theme="dark"] .dropdown-item:focus {
+    background-color: var(--surface-2);
+    color: var(--brand-500);
+}
+
+[data-bs-theme="dark"] .dropdown-divider {
+    border-top-color: var(--border);
+}
+
+/* ── Modal ── */
+[data-bs-theme="dark"] .modal-content {
+    background-color: var(--surface-0);
+    border-color:     var(--border);
+}
+
+[data-bs-theme="dark"] .modal-header {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--border);
+}
+
+[data-bs-theme="dark"] .modal-footer {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--border);
+}
+
+/* ── List group ── */
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--surface-0);
+    border-color:     var(--border);
+    color:            var(--text-primary);
+}
+
+[data-bs-theme="dark"] .list-group-item:hover {
+    background-color: var(--surface-2);
+}
+
+/* ── Badges ── */
+[data-bs-theme="dark"] .badge {
+    font-weight: 500;
+}
+
+[data-bs-theme="dark"] .bg-primary,
+[data-bs-theme="dark"] .text-bg-primary { background-color: var(--brand-500) !important; }
+[data-bs-theme="dark"] .text-primary    { color: var(--brand-500) !important; }
+[data-bs-theme="dark"] .border-primary  { border-color: var(--brand-500) !important; }
+
+/* ── Progress ── */
+[data-bs-theme="dark"] .progress {
+    background-color: var(--surface-2);
+}
+
+[data-bs-theme="dark"] .progress-bar {
+    background-color: var(--brand-500);
+}
+
+/* ── Pagination ── */
+[data-bs-theme="dark"] .page-link {
+    background-color: var(--surface-0);
+    border-color:     var(--border);
+    color:            var(--brand-500);
+}
+
+[data-bs-theme="dark"] .page-link:hover {
+    background-color: var(--surface-2);
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+    background-color: var(--brand-500);
+    border-color:     var(--brand-500);
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .page-item.disabled .page-link {
+    background-color: var(--surface-0);
+    border-color:     var(--border);
+    color:            var(--text-muted);
+}
+
+/* ── Alerts ── */
+[data-bs-theme="dark"] .alert-primary {
+    --bs-alert-color:        #93c5fd;
+    --bs-alert-bg:           rgba(59, 130, 246, 0.12);
+    --bs-alert-border-color: rgba(59, 130, 246, 0.25);
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    --bs-alert-color:        #fca5a5;
+    --bs-alert-bg:           rgba(239, 68, 68, 0.12);
+    --bs-alert-border-color: rgba(239, 68, 68, 0.25);
+}
+
+[data-bs-theme="dark"] .alert-success {
+    --bs-alert-color:        #86efac;
+    --bs-alert-bg:           rgba(34, 197, 94, 0.12);
+    --bs-alert-border-color: rgba(34, 197, 94, 0.25);
+}
+
+[data-bs-theme="dark"] .alert-warning {
+    --bs-alert-color:        #fcd34d;
+    --bs-alert-bg:           rgba(245, 158, 11, 0.12);
+    --bs-alert-border-color: rgba(245, 158, 11, 0.25);
+}
+
+/* ── Breadcrumb ── */
+[data-bs-theme="dark"] .breadcrumb-item.active {
+    color: var(--text-muted);
+}
+
+/* ── Tooltip ── */
+[data-bs-theme="dark"] .tooltip-inner {
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
 }

@@ -1,59 +1,243 @@
-/* ─── Standard tema: lys bakgrunn, mørk profesjonell meny ─── */
+/* ================================================================
+   STANDARD TEMA – Profesjonell, lys, strikt
+   Base: vanilla Bootstrap 5.3
+   ================================================================ */
 
+/* ── Fargepalett og CSS-variabler ── */
 :root {
-    /* Sidebar */
-    --ts-sidebar-bg: #1e2b3c;
-    --ts-sidebar-hover: rgba(255,255,255,0.08);
-    --ts-sidebar-active: rgba(37,99,235,0.22);
-    --ts-sidebar-text: rgba(203,213,225,0.92);
-    --ts-sidebar-border: rgba(255,255,255,0.07);
+    /* Primærfarge */
+    --brand-500:     #2563eb;
+    --brand-600:     #1d4ed8;
+    --brand-700:     #1e40af;
+    --brand-rgb:     37, 99, 235;
 
-    /* Topbar */
-    --ts-topbar-bg: #1e2b3c;
-    --ts-topbar-border: rgba(255,255,255,0.07);
+    /* Overflater */
+    --surface-0:     #ffffff;
+    --surface-1:     #f1f5f9;
+    --surface-2:     #e8edf5;
+    --text-primary:  #0f172a;
+    --text-muted:    #5c6b82;
+    --border:        #dde3ec;
 
-    /* Bootstrap overrides */
-    --bs-body-bg: #f8fafc;
-    --bs-body-color: #1e293b;
-    --bs-secondary-color: #64748b;
-    --bs-tertiary-bg: #f1f5f9;
-    --bs-border-color: #e2e8f0;
-    --bs-link-color: #2563eb;
-    --bs-link-hover-color: #1d4ed8;
+    /* Bootstrap-overrides */
+    --bs-primary:           var(--brand-500);
+    --bs-primary-rgb:       var(--brand-rgb);
+    --bs-body-bg:           var(--surface-1);
+    --bs-body-color:        var(--text-primary);
+    --bs-secondary-color:   var(--text-muted);
+    --bs-tertiary-bg:       var(--surface-2);
+    --bs-border-color:      var(--border);
+    --bs-link-color:        var(--brand-500);
+    --bs-link-hover-color:  var(--brand-600);
+    --bs-card-bg:           var(--surface-0);
+    --bs-border-radius:     0.375rem;
+    --bs-border-radius-sm:  0.25rem;
+    --bs-border-radius-lg:  0.5rem;
+
+    /* Sidebar og topbar */
+    --ts-sidebar-bg:     #1a2539;
+    --ts-sidebar-hover:  rgba(255, 255, 255, 0.07);
+    --ts-sidebar-active: rgba(37, 99, 235, 0.22);
+    --ts-sidebar-text:   rgba(185, 202, 224, 0.95);
+    --ts-sidebar-border: rgba(255, 255, 255, 0.07);
+    --ts-topbar-bg:      #1a2539;
+    --ts-topbar-border:  rgba(255, 255, 255, 0.07);
 }
 
-/* Primærknapper */
+/* ── Typografi ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+/* ── Knapper ── */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
 .btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: #2563eb;
-    --bs-btn-border-color: #2563eb;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #1d4ed8;
-    --bs-btn-hover-border-color: #1d4ed8;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #1e40af;
-    --bs-btn-active-border-color: #1e40af;
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #2563eb;
-    --bs-btn-disabled-border-color: #2563eb;
-    --bs-btn-focus-shadow-rgb: 37, 99, 235;
+    --bs-btn-color:              #fff;
+    --bs-btn-bg:                 var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-600);
+    --bs-btn-hover-border-color: var(--brand-600);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-700);
+    --bs-btn-active-border-color: var(--brand-700);
+    --bs-btn-disabled-bg:        var(--brand-500);
+    --bs-btn-disabled-border-color: var(--brand-500);
+    --bs-btn-focus-shadow-rgb:   var(--brand-rgb);
 }
 
 .btn-outline-primary {
-    --bs-btn-color: #2563eb;
-    --bs-btn-border-color: #2563eb;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #2563eb;
-    --bs-btn-hover-border-color: #2563eb;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #2563eb;
+    --bs-btn-color:              var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-500);
+    --bs-btn-hover-border-color: var(--brand-500);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-500);
 }
 
+.btn-secondary {
+    --bs-btn-bg:           #e2e8f0;
+    --bs-btn-border-color: #cbd5e1;
+    --bs-btn-color:        var(--text-primary);
+    --bs-btn-hover-bg:     #cbd5e1;
+    --bs-btn-hover-border-color: #b0bdc9;
+    --bs-btn-hover-color:  var(--text-primary);
+}
+
+/* ── Kort ── */
+.card {
+    --bs-card-border-color: var(--border);
+    --bs-card-cap-bg:       var(--surface-1);
+    background-color:       var(--surface-0);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--border);
+}
+
+.card-header {
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 0.65rem 1rem;
+}
+
+.card-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Tabeller ── */
+.table {
+    --bs-table-striped-bg: rgba(15, 23, 42, 0.025);
+    --bs-table-hover-bg:   rgba(37, 99, 235, 0.04);
+    --bs-table-border-color: var(--border);
+    font-size: 0.875rem;
+}
+
+.table thead th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background-color: var(--surface-1);
+    border-bottom: 2px solid var(--border);
+}
+
+/* ── Skjema ── */
+.form-control,
+.form-select {
+    border-color: var(--border);
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.12);
+    background-color: var(--surface-0);
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+}
+
+/* ── Navigasjon ── */
 .nav-pills .nav-link.active,
 .nav-pills .show > .nav-link {
-    background-color: #2563eb;
+    background-color: var(--brand-500);
 }
 
-.text-primary { color: #2563eb !important; }
-.bg-primary   { background-color: #2563eb !important; }
-.border-primary { border-color: #2563eb !important; }
+.nav-tabs .nav-link.active {
+    border-bottom-color: var(--brand-500);
+    color: var(--brand-500);
+    font-weight: 600;
+}
+
+/* ── Varsler ── */
+.alert-primary {
+    --bs-alert-color:       var(--brand-700);
+    --bs-alert-bg:          #dbeafe;
+    --bs-alert-border-color: #bfdbfe;
+}
+
+/* ── Badges ── */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.03em;
+}
+
+.bg-primary,
+.text-bg-primary { background-color: var(--brand-500) !important; }
+.text-primary    { color: var(--brand-500) !important; }
+.border-primary  { border-color: var(--brand-500) !important; }
+
+/* ── Dropdown ── */
+.dropdown-menu {
+    --bs-dropdown-border-color: var(--border);
+    --bs-dropdown-bg:           var(--surface-0);
+    box-shadow: 0 4px 6px -1px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.05);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--surface-1);
+    color: var(--brand-500);
+}
+
+/* ── Modal ── */
+.modal-header {
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+/* ── List group ── */
+.list-group-item {
+    --bs-list-group-border-color: var(--border);
+    --bs-list-group-bg:           var(--surface-0);
+}
+
+/* ── Progress ── */
+.progress {
+    background-color: var(--surface-2);
+}
+
+.progress-bar {
+    background-color: var(--brand-500);
+}
+
+/* ── Pagination ── */
+.page-link {
+    color: var(--brand-500);
+}
+
+.page-item.active .page-link {
+    background-color: var(--brand-500);
+    border-color:     var(--brand-500);
+}

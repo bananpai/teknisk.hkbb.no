@@ -432,23 +432,28 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 <script>
 (function () {
     function setTheme(themeKey) {
+        // Bootstrap-base er alltid den samme (vanilla)
         var bsLink = document.getElementById('themeBootstrap');
-        if (!bsLink) {
-            bsLink = document.createElement('link');
-            bsLink.rel = 'stylesheet';
-            bsLink.id  = 'themeBootstrap';
-            document.head.prepend(bsLink);
+        if (bsLink) {
+            bsLink.href = '/assets/bootstrap/bootstrap.min.css';
         }
-        bsLink.href = '/assets/themes/' + themeKey + '/bootstrap.min.css';
 
+        // Byt tema-CSS
         var overlay = document.getElementById('themeOverlay');
         if (!overlay) {
             overlay = document.createElement('link');
             overlay.rel = 'stylesheet';
             overlay.id  = 'themeOverlay';
-            bsLink.insertAdjacentElement('afterend', overlay);
+            document.head.appendChild(overlay);
         }
         overlay.href = '/assets/themes/' + themeKey + '/theme.css';
+
+        // Mørkt tema: sett data-bs-theme="dark" på html-elementet
+        if (themeKey === 'mork') {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-bs-theme');
+        }
     }
 
     window.__setBootswatchTheme = setTheme;
