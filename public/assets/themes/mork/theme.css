@@ -31,14 +31,24 @@
     --bs-link-hover-color:  #60a5fa;
     --bs-card-bg:           var(--surface-0);
 
-    /* Sidebar og topbar */
-    --ts-sidebar-bg:     #080f1a;
-    --ts-sidebar-hover:  rgba(255, 255, 255, 0.07);
-    --ts-sidebar-active: rgba(59, 130, 246, 0.2);
-    --ts-sidebar-text:   rgba(148, 178, 208, 0.95);
-    --ts-sidebar-border: rgba(255, 255, 255, 0.05);
-    --ts-topbar-bg:      #080f1a;
-    --ts-topbar-border:  rgba(255, 255, 255, 0.05);
+    /* Sidebar */
+    --ts-sidebar-bg:          #060d18;
+    --ts-sidebar-border:      rgba(255, 255, 255, 0.06);
+    --ts-sidebar-text:        rgba(148, 178, 208, 0.85);
+    --ts-sidebar-text-active: #e2e8f0;
+    --ts-sidebar-hover:       rgba(255, 255, 255, 0.06);
+    --ts-sidebar-active-bg:   rgba(59, 130, 246, 0.18);
+    --ts-sidebar-active-line: #3b82f6;
+    --ts-sidebar-section:     rgba(100, 130, 160, 0.45);
+
+    /* Topbar (mørk) */
+    --ts-topbar-bg:           #0f172a;
+    --ts-topbar-border:       rgba(255, 255, 255, 0.08);
+    --ts-topbar-text:         #e2e8f0;
+    --ts-topbar-text-muted:   #64748b;
+
+    /* Content */
+    --ts-content-bg:          #0f172a;
 }
 
 /* ── Typografi ── */
