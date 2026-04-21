@@ -44,47 +44,26 @@ if (isset($currentTheme) && is_string($currentTheme) && $currentTheme !== '') {
 $bootswatchTheme = preg_replace('~[^a-z]~', '', $bootswatchTheme) ?: $defaultTheme;
 
 // ---------------------------------------------------------
-// Egendefinerte temaer i /assets/themes/ (Standard, Mørk, Kitty)
-// Faller tilbake til bootswatch-temaer for bakoverkompatibilitet
+// Egendefinerte temaer: vanilla Bootstrap + /assets/themes/{tema}/theme.css
 // ---------------------------------------------------------
-$assetsBase     = __DIR__ . '/../assets';
-$customThemeDir = "{$assetsBase}/themes/{$bootswatchTheme}";
-$useCustomTheme = is_file("{$customThemeDir}/bootstrap.min.css");
+$assetsBase = __DIR__ . '/../assets';
 
-if ($useCustomTheme) {
-    $bsVer          = (string)filemtime("{$customThemeDir}/bootstrap.min.css");
-    $themeBootstrapHref = "/assets/themes/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
-
-    $hasThemeOverlay = is_file("{$customThemeDir}/theme.css");
-    $themeOverlayHref = $hasThemeOverlay
-        ? '/assets/themes/' . $bootswatchTheme . '/theme.css?v=' . filemtime("{$customThemeDir}/theme.css")
-        : null;
-} else {
-    // Fallback: bootswatch
-    $bootswatchFs = "{$assetsBase}/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-    if (!is_file($bootswatchFs)) {
-        $bootswatchTheme = $defaultTheme;
-        $customThemeDir  = "{$assetsBase}/themes/{$bootswatchTheme}";
-        if (is_file("{$customThemeDir}/bootstrap.min.css")) {
-            $useCustomTheme = true;
-            $bsVer = (string)filemtime("{$customThemeDir}/bootstrap.min.css");
-            $themeBootstrapHref = "/assets/themes/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
-            $hasThemeOverlay    = is_file("{$customThemeDir}/theme.css");
-            $themeOverlayHref   = $hasThemeOverlay
-                ? '/assets/themes/' . $bootswatchTheme . '/theme.css?v=' . filemtime("{$customThemeDir}/theme.css")
-                : null;
-            $bootswatchFs = '';
-        } else {
-            $bootswatchFs = "{$assetsBase}/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-        }
-    }
-    if (!$useCustomTheme) {
-        $bsVer = is_file($bootswatchFs) ? (string)filemtime($bootswatchFs) : (string)time();
-        $themeBootstrapHref = "/assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
-        $themeOverlayHref   = null;
-        $hasThemeOverlay    = false;
-    }
+// Valider at tema-CSS finnes, ellers fallback
+$themeCssFs = $assetsBase . '/themes/' . $bootswatchTheme . '/theme.css';
+if (!is_file($themeCssFs)) {
+    $bootswatchTheme = $defaultTheme;
+    $themeCssFs      = $assetsBase . '/themes/' . $bootswatchTheme . '/theme.css';
 }
+
+$bsFs        = $assetsBase . '/bootstrap/bootstrap.min.css';
+$bsVer       = is_file($bsFs) ? (string)filemtime($bsFs) : '1';
+$themeVer    = is_file($themeCssFs) ? (string)filemtime($themeCssFs) : '1';
+
+$bootstrapHref   = '/assets/bootstrap/bootstrap.min.css?v=' . $bsVer;
+$themeHref       = '/assets/themes/' . $bootswatchTheme . '/theme.css?v=' . $themeVer;
+
+// Mørkt tema aktiverer Bootstrap sin innebygde dark mode
+$darkMode = ($bootswatchTheme === 'mork');
 
 // ---------------------------------------------------------
 // Print-mode: ?print=1 gir "flat" layout uten app-shell/sidebar/topbar
@@ -106,26 +85,24 @@ $sidebarExpanded = ($_COOKIE['sidebar_expanded'] ?? '1') === '1';
 $iconsHref = "/assets/bootstrap-icons/bootstrap-icons.css";
 ?>
 <!doctype html>
-<html lang="no">
+<html lang="no"<?= $darkMode ? ' data-bs-theme="dark"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <title><?= htmlspecialchars($pageTitle ?? 'Teknisk', ENT_QUOTES, 'UTF-8') ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap / tema-base -->
-    <link id="themeBootstrap" rel="stylesheet" href="<?= htmlspecialchars($themeBootstrapHref, ENT_QUOTES, 'UTF-8') ?>">
+    <!-- Vanilla Bootstrap 5.3 -->
+    <link id="themeBootstrap" rel="stylesheet" href="<?= htmlspecialchars($bootstrapHref, ENT_QUOTES, 'UTF-8') ?>">
 
-    <?php if ($themeOverlayHref): ?>
-    <!-- Tema-overrides -->
-    <link id="themeOverlay" rel="stylesheet" href="<?= htmlspecialchars($themeOverlayHref, ENT_QUOTES, 'UTF-8') ?>">
-    <?php endif; ?>
+    <!-- Egendefinert tema -->
+    <link id="themeOverlay" rel="stylesheet" href="<?= htmlspecialchars($themeHref, ENT_QUOTES, 'UTF-8') ?>">
 
-    <!-- Lokale Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="<?= htmlspecialchars($iconsHref, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- App CSS (samlet) - droppes i printMode for å unngå layout-loop -->
     <?php if (!$printMode): ?>
-        <link rel="stylesheet" href="/assets/app/app.css?v=3">
+        <link rel="stylesheet" href="/assets/app/app.css?v=4">
     <?php endif; ?>
 
     <!-- Global print overrides (kun print) -->

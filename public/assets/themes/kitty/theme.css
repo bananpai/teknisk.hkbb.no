@@ -1,86 +1,249 @@
-/* ─── Kitty tema: rosa og søt ─── */
+/* ================================================================
+   KITTY TEMA – Rosa, søt og lekker
+   Base: vanilla Bootstrap 5.3
+   ================================================================ */
 
+/* ── Fargepalett og CSS-variabler ── */
 :root {
-    /* Sidebar */
-    --ts-sidebar-bg: #c2185b;
-    --ts-sidebar-hover: rgba(255,255,255,0.15);
-    --ts-sidebar-active: rgba(255,255,255,0.22);
-    --ts-sidebar-text: rgba(255,255,255,0.97);
-    --ts-sidebar-border: rgba(255,255,255,0.14);
+    /* Primærfarge – varm rosa */
+    --brand-400:     #f472b6;
+    --brand-500:     #e91e63;
+    --brand-600:     #c2185b;
+    --brand-700:     #ad1457;
+    --brand-rgb:     233, 30, 99;
 
-    /* Topbar */
-    --ts-topbar-bg: #c2185b;
-    --ts-topbar-border: rgba(255,255,255,0.14);
+    /* Overflater */
+    --surface-0:     #ffffff;
+    --surface-1:     #fff5f9;
+    --surface-2:     #fce4ec;
+    --text-primary:  #3d0026;
+    --text-muted:    #9e4368;
+    --border:        #f8bbd0;
 
-    /* Bootstrap overrides */
-    --bs-body-bg: #fff5f9;
-    --bs-body-color: #3d0026;
-    --bs-secondary-color: #9e4368;
-    --bs-tertiary-bg: #fce4ec;
-    --bs-border-color: #f8bbd0;
-    --bs-link-color: #d81b60;
-    --bs-link-hover-color: #c2185b;
+    /* Bootstrap-overrides */
+    --bs-primary:           var(--brand-500);
+    --bs-primary-rgb:       var(--brand-rgb);
+    --bs-body-bg:           var(--surface-1);
+    --bs-body-color:        var(--text-primary);
+    --bs-secondary-color:   var(--text-muted);
+    --bs-tertiary-bg:       var(--surface-2);
+    --bs-border-color:      var(--border);
+    --bs-link-color:        var(--brand-500);
+    --bs-link-hover-color:  var(--brand-600);
+    --bs-card-bg:           var(--surface-0);
 
-    /* Rundere hjørner for søtere look */
-    --bs-border-radius:    0.5rem;
-    --bs-border-radius-sm: 0.35rem;
-    --bs-border-radius-lg: 0.75rem;
-    --bs-border-radius-xl: 1rem;
+    /* Rundere hjørner */
+    --bs-border-radius:     0.6rem;
+    --bs-border-radius-sm:  0.4rem;
+    --bs-border-radius-lg:  0.85rem;
+    --bs-border-radius-xl:  1.1rem;
+    --bs-border-radius-pill: 50rem;
+
+    /* Sidebar og topbar */
+    --ts-sidebar-bg:     #c2185b;
+    --ts-sidebar-hover:  rgba(255, 255, 255, 0.14);
+    --ts-sidebar-active: rgba(255, 255, 255, 0.22);
+    --ts-sidebar-text:   rgba(255, 255, 255, 0.97);
+    --ts-sidebar-border: rgba(255, 255, 255, 0.12);
+    --ts-topbar-bg:      #c2185b;
+    --ts-topbar-border:  rgba(255, 255, 255, 0.12);
 }
 
-/* Gradient sidebar */
+/* ── Sidebar: gradient ── */
 .app-sidebar {
     background: linear-gradient(180deg, #e91e63 0%, #ad1457 100%) !important;
 }
 
-/* Primærknapper */
+/* ── Typografi ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ── Knapper ── */
+.btn {
+    font-weight: 500;
+}
+
 .btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: #e91e63;
-    --bs-btn-border-color: #e91e63;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #c2185b;
-    --bs-btn-hover-border-color: #c2185b;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #ad1457;
-    --bs-btn-active-border-color: #ad1457;
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #e91e63;
-    --bs-btn-disabled-border-color: #e91e63;
-    --bs-btn-focus-shadow-rgb: 233, 30, 99;
+    --bs-btn-color:              #fff;
+    --bs-btn-bg:                 var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-600);
+    --bs-btn-hover-border-color: var(--brand-600);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-700);
+    --bs-btn-active-border-color: var(--brand-700);
+    --bs-btn-disabled-bg:        var(--brand-500);
+    --bs-btn-disabled-border-color: var(--brand-500);
+    --bs-btn-focus-shadow-rgb:   var(--brand-rgb);
 }
 
 .btn-outline-primary {
-    --bs-btn-color: #e91e63;
-    --bs-btn-border-color: #e91e63;
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #e91e63;
-    --bs-btn-hover-border-color: #e91e63;
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #e91e63;
+    --bs-btn-color:              var(--brand-500);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-500);
+    --bs-btn-hover-border-color: var(--brand-500);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-500);
 }
 
-.nav-pills .nav-link.active,
-.nav-pills .show > .nav-link {
-    background-color: #e91e63;
+.btn-secondary {
+    --bs-btn-bg:           var(--surface-2);
+    --bs-btn-border-color: var(--border);
+    --bs-btn-color:        var(--text-primary);
+    --bs-btn-hover-bg:     #f48fb1;
+    --bs-btn-hover-border-color: #f48fb1;
+    --bs-btn-hover-color:  #fff;
 }
 
-.text-primary   { color: #e91e63 !important; }
-.bg-primary     { background-color: #e91e63 !important; }
-.border-primary { border-color: #e91e63 !important; }
-
-.badge.bg-primary,
-.badge.text-bg-primary {
-    background-color: #e91e63 !important;
-}
-
-/* Litt mykere kort */
+/* ── Kort ── */
 .card {
-    border-color: #f8bbd0;
+    --bs-card-border-color: var(--border);
+    --bs-card-cap-bg:       var(--surface-1);
+    background-color: var(--surface-0);
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.07), 0 1px 3px rgba(233, 30, 99, 0.04);
+    border: 1px solid var(--border);
+}
+
+.card-header {
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--brand-600);
+}
+
+.card-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Tabeller ── */
+.table {
+    --bs-table-striped-bg:   rgba(233, 30, 99, 0.035);
+    --bs-table-hover-bg:     rgba(233, 30, 99, 0.06);
+    --bs-table-border-color: var(--border);
+    font-size: 0.875rem;
+}
+
+.table thead th {
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--brand-600);
+    background-color: var(--surface-2);
+    border-bottom: 2px solid #f48fb1;
+}
+
+/* ── Skjema ── */
+.form-control,
+.form-select {
+    border-color: var(--border);
+    background-color: var(--surface-0);
+    color: var(--text-primary);
 }
 
 .form-control:focus,
 .form-select:focus {
-    border-color: #e91e63;
-    box-shadow: 0 0 0 0.25rem rgba(233,30,99,0.2);
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.15);
+    background-color: var(--surface-0);
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--brand-700);
+    margin-bottom: 0.35rem;
+}
+
+/* ── Navigasjon ── */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: var(--brand-500);
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: var(--brand-500);
+    color: var(--brand-500);
+    font-weight: 600;
+}
+
+/* ── Badges ── */
+.badge {
+    font-weight: 500;
+}
+
+.bg-primary,
+.text-bg-primary { background-color: var(--brand-500) !important; }
+.text-primary    { color: var(--brand-500) !important; }
+.border-primary  { border-color: var(--brand-500) !important; }
+
+/* ── Dropdown ── */
+.dropdown-menu {
+    --bs-dropdown-border-color: var(--border);
+    --bs-dropdown-bg:           var(--surface-0);
+    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.12);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--surface-1);
+    color: var(--brand-500);
+}
+
+/* ── Modal ── */
+.modal-header {
+    background: linear-gradient(135deg, #fce4ec, #fff5f9);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Alerts ── */
+.alert-primary {
+    --bs-alert-color:        var(--brand-700);
+    --bs-alert-bg:           #fce4ec;
+    --bs-alert-border-color: #f48fb1;
+}
+
+/* ── Progress ── */
+.progress {
+    background-color: var(--surface-2);
+    border-radius: var(--bs-border-radius-pill);
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #e91e63, #f06292);
+}
+
+/* ── Pagination ── */
+.page-link {
+    color: var(--brand-500);
+    border-color: var(--border);
+}
+
+.page-item.active .page-link {
+    background-color: var(--brand-500);
+    border-color:     var(--brand-500);
+}
+
+/* ── Input group ── */
+.input-group-text {
+    background-color: var(--surface-2);
+    border-color:     var(--border);
+    color:            var(--text-muted);
 }
