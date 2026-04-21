@@ -551,7 +551,7 @@ $allowedPages = [
     'events_view',
     'events_edit',
     'events_map',
-    'events_dashboards',
+    'events_dashboards', 'jira_create_test',
 
 
     'users',
@@ -561,6 +561,7 @@ $allowedPages = [
     'security',
     'security_ip_filter',
     'api_admin',
+    'auth_settings',
 
     // ✅ Avtaler & kontrakter
     'contracts',

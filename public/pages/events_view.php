@@ -216,8 +216,6 @@ try {
     if (!col_exists($pdo, 'event_integrations', 'last_error'))   { $pdo->exec("ALTER TABLE event_integrations ADD COLUMN last_error TEXT NULL"); }
     if (!col_exists($pdo, 'event_integrations', 'updated_at'))   { $pdo->exec("ALTER TABLE event_integrations ADD COLUMN updated_at DATETIME NULL"); }
 
-    // ⭐ FIKS: sync_status kan eksistere som ENUM fra før -> gir "Data truncated"
-    // Tving den til VARCHAR(32) med riktig default.
     try {
       $pdo->exec("ALTER TABLE event_integrations MODIFY COLUMN sync_status VARCHAR(32) NOT NULL DEFAULT 'not_linked'");
     } catch (Throwable $e2) {}
@@ -296,7 +294,6 @@ try {
     if (!col_exists($pdo, 'events', 'customer_impact'))      { $pdo->exec("ALTER TABLE events ADD COLUMN customer_impact TINYINT(1) NOT NULL DEFAULT 0"); }
     if (!col_exists($pdo, 'events', 'affected_customers'))   { $pdo->exec("ALTER TABLE events ADD COLUMN affected_customers INT NOT NULL DEFAULT 0"); }
 
-    // severity: gjør fleksibel (unngå ENUM-truncation)
     if (!col_exists($pdo, 'events', 'severity')) {
       $pdo->exec("ALTER TABLE events ADD COLUMN severity VARCHAR(32) NULL");
     } else {
@@ -504,6 +501,13 @@ function jira_http_json(string $method, string $url, array $headers, ?array $pay
   $rawOut = is_string($out) ? $out : '';
   $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
   $err = curl_error($ch);
+
+  // Midlertidig Jira-debug logging for feilsøking mot support
+  error_log('Jira HTTP ' . $httpCode . ': ' . ($rawOut !== '' ? $rawOut : '[empty response]'));
+  if ($out === false) {
+    error_log('Jira cURL error: ' . ($err !== '' ? $err : 'unknown_error'));
+  }
+
   curl_close($ch);
 
   if ($out === false) { $httpCode = 0; return ['_curl_error' => $err ?: 'unknown_error']; }
@@ -588,7 +592,6 @@ function affected_store_items(PDO $pdo, int $eventId, string $leveransepunktId, 
       ]);
       $saved++;
     } catch (Throwable $e) {
-      // fail-soft per rad
     }
   }
 
@@ -782,12 +785,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     try {
 
-      // Admin: hard delete (inkl. koblede komponenter)
       if ($action === 'delete_event' && $isAdmin) {
         $pdo->beginTransaction();
         try {
           $pdo->prepare("DELETE FROM event_updates WHERE event_id=?")->execute([$id]);
-          $pdo->prepare("DELETE FROM event_targets WHERE event_id=?")->execute([$id]); // selv om UI er fjernet, rydder vi uansett
+          $pdo->prepare("DELETE FROM event_targets WHERE event_id=?")->execute([$id]);
           $pdo->prepare("DELETE FROM event_affected_addresses WHERE event_id=?")->execute([$id]);
           $pdo->prepare("DELETE FROM event_integrations WHERE event_id=?")->execute([$id]);
           $pdo->prepare("DELETE FROM events WHERE id=?")->execute([$id]);
@@ -878,13 +880,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id
           ]);
 
-          // Jira saksnummer (manuell kobling)
           $jira_issue_key = strtoupper(trim((string)($_POST['jira_issue_key'] ?? '')));
-          $jira_system_pick = (string)($_POST['jira_issuetype_pick'] ?? 'jira'); // "JIRA" eller "Annet"
+          $jira_system_pick = (string)($_POST['jira_issuetype_pick'] ?? 'jira');
           if (!in_array($jira_system_pick, ['jira','other'], true)) $jira_system_pick = 'jira';
 
           if ($jira_issue_key !== '') {
-            // Enkel validering: tillat A-Z0-9- (typisk "FTD-123")
             $jira_issue_key = preg_replace('/[^A-Z0-9\-]/', '', $jira_issue_key) ?? $jira_issue_key;
             $browse = rtrim($JIRA_SITE, '/') . '/browse/' . $jira_issue_key;
 
@@ -903,7 +903,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $id
             ]);
           } else {
-            // hvis tomt: behold evt eksisterende, men oppdater meta
             $meta = [
               'issuetype_pick' => $jira_system_pick,
             ];
@@ -935,8 +934,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           ")->execute([
             $available_kundesenter,
             $available_hkon,
-            $available_hkon,   // synk available_chat med Hkon-flagget
-            $available_hkon,   // is_public følger Hkon-flagget
+            $available_hkon,
+            $available_hkon,
             $available_dashboard,
             $username,
             $id
@@ -959,7 +958,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       }
 
-      // Valgfritt: Opprett i Jira (kun hvis credentials er satt og meta sier "jira")
       if ($action === 'create_jira' && $canWrite) {
         $jiraRow = load_jira($pdo, $id);
         $alreadyKey = (string)($jiraRow['external_id'] ?? '');
@@ -1125,7 +1123,6 @@ $sevLabelMap = [
 $sevBadgeText = '';
 if (!empty($event['severity'])) $sevBadgeText = $sevLabelMap[(string)$event['severity']] ?? (string)$event['severity'];
 
-/* ---- berørte adresser (for visning) ---- */
 $affectedRows = load_affected_addresses($pdo, $id, 250);
 $affectedAddrTotal = count_affected_addresses($pdo, $id);
 $affectedLpTotal = count_affected_leveransepunkt($pdo, $id);
@@ -1347,7 +1344,6 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
         </div>
       </div>
 
-      <!-- Distribusjon: hvilke kilder som skal ha tilgang til saken -->
       <?php if ($canPublish): ?>
       <div class="col-12">
         <hr class="my-2">
@@ -1393,7 +1389,6 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
   </div>
 </form>
 
-<!-- Berørte adresser -->
 <div class="card mb-3">
   <div class="card-header d-flex align-items-center justify-content-between">
     <div>Berørte adresser</div>
@@ -1635,7 +1630,6 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
               await refreshAffected();
 
             } catch (e) {
-              // stillegående
             }
           }
 
@@ -1711,7 +1705,6 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
   </div>
 </div>
 
-<!-- Oppdateringer -->
 <div class="card mb-3">
   <div class="card-header fw-semibold">Oppdateringer</div>
   <div class="card-body">
@@ -1761,7 +1754,6 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
     <?php endif; ?>
   </div>
 </div>
-
 
 <?php if ($isAdmin): ?>
   <details class="mt-4">
