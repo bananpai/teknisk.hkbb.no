@@ -261,9 +261,8 @@ $adminPages = [
     'lager_users_edit',
     'security',
     'security_ip_filter',
-
-    // ✅ NYTT: API-admin under Admin
     'api_admin',
+    'auth_settings',
 ];
 $adminOpen = in_array($currentPage, $adminPages, true);
 
@@ -555,10 +554,14 @@ if (is_string($avatarPath) && $avatarPath !== '') {
                     <i class="bi bi-shield-check"></i><span>Sikkerhet</span>
                 </a>
 
-                <!-- ✅ NYTT: API-administrasjon under Admin -->
                 <a href="/?page=api_admin"
                    class="nav-link nav-sub <?= $currentPage === 'api_admin' ? 'active' : '' ?>">
                     <i class="bi bi-key"></i><span>API</span>
+                </a>
+
+                <a href="/?page=auth_settings"
+                   class="nav-link nav-sub <?= $currentPage === 'auth_settings' ? 'active' : '' ?>">
+                    <i class="bi bi-person-badge"></i><span>Autentisering</span>
                 </a>
             </div>
         <?php endif; ?>

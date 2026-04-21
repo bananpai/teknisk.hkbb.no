@@ -61,14 +61,24 @@ class Mailer
             $mail->isSMTP();
             $mail->Host       = $this->host;
             $mail->Port       = $this->port;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $this->username;
-            $mail->Password   = $this->password;
-            $mail->SMTPSecure = $this->encryption === 'ssl'
-                ? PHPMailer::ENCRYPTION_SMTPS
-                : PHPMailer::ENCRYPTION_STARTTLS;
+            if ($this->encryption === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                $mail->SMTPAuth   = true;
+            } elseif ($this->encryption === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->SMTPAuth   = true;
+            } else {
+                $mail->SMTPSecure = '';
+                $mail->SMTPAutoTLS = false;
+                $mail->SMTPAuth   = false;
+            }
+            if ($mail->SMTPAuth) {
+                $mail->Username = $this->username;
+                $mail->Password = $this->password;
+            }
         }
 
+        $mail->XMailer  = ' ';
         $mail->CharSet  = 'UTF-8';
         $mail->Encoding = 'quoted-printable';
 

@@ -93,6 +93,65 @@ class TwoFaStorage
         ];
     }
 
+    /**
+     * Sync Entra ID-bruker til databasen (oppretter hvis mangler, oppdaterer ved eksisterende).
+     * Ny bruker opprettes som INAKTIV – må aktiveres av admin.
+     */
+    public function syncUserFromEntra(string $username, ?string $displayName, ?string $email): array
+    {
+        $this->pdo->beginTransaction();
+
+        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE username = :u FOR UPDATE');
+        $stmt->execute([':u' => $username]);
+        $row = $stmt->fetch();
+
+        if ($row === false) {
+            $this->pdo->prepare(
+                'INSERT INTO users (username, display_name, email, last_login_at, is_active)
+                 VALUES (:u, :n, :e, NOW(), 0)'
+            )->execute([':u' => $username, ':n' => $displayName, ':e' => $email]);
+
+            $id  = (int)$this->pdo->lastInsertId();
+            $row = [
+                'id'            => $id,
+                'username'      => $username,
+                'display_name'  => $displayName,
+                'is_active'     => 0,
+                'twofa_enabled' => 0,
+                'twofa_secret'  => null,
+            ];
+        } else {
+            $this->pdo->prepare(
+                'UPDATE users
+                 SET display_name  = :n,
+                     email         = COALESCE(:e, email),
+                     last_login_at = NOW()
+                 WHERE id = :id'
+            )->execute([':n' => $displayName, ':e' => $email, ':id' => $row['id']]);
+
+            $row['display_name'] = $displayName;
+        }
+
+        // Sett auth_provider hvis kolonnen finnes
+        try {
+            $this->pdo->prepare(
+                "UPDATE users SET auth_provider = 'entra' WHERE id = :id"
+            )->execute([':id' => $row['id']]);
+        } catch (\Throwable $e) {
+            // Kolonnen finnes ikke ennå – ignorer
+        }
+
+        $this->pdo->commit();
+
+        return [
+            'username'      => $row['username'],
+            'full_name'     => $row['display_name'],
+            'ad_groups'     => [],
+            'twofa_enabled' => (bool)($row['twofa_enabled'] ?? 0),
+            'twofa_secret'  => $row['twofa_secret'] ?? null,
+        ];
+    }
+
     public function saveTwoFa(string $username, bool $enabled, ?string $secret): void
     {
         $stmt = $this->pdo->prepare(
