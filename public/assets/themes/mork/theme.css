@@ -1,0 +1,14 @@
+/* ─── Mørkt tema: quartz-base, dypere sidebar ─── */
+
+:root {
+    /* Sidebar */
+    --ts-sidebar-bg: #0d1b2a;
+    --ts-sidebar-hover: rgba(255,255,255,0.08);
+    --ts-sidebar-active: rgba(255,255,255,0.13);
+    --ts-sidebar-text: rgba(203,213,225,0.9);
+    --ts-sidebar-border: rgba(255,255,255,0.06);
+
+    /* Topbar */
+    --ts-topbar-bg: #0d1b2a;
+    --ts-topbar-border: rgba(255,255,255,0.06);
+}

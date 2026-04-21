@@ -109,56 +109,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_email'])) {
 // ---------------------------------------------------------
 
 /**
- * Normaliserer tema til bootswatch-mappenavn (lowercase).
- * Støtter bakoverkompatibilitet hvis DB inneholder "Yeti", "Slate", "Cosmo", osv.
+ * Normaliserer tema-nøkkel til gyldige egendefinerte temaer.
+ * Mapper gamle bootswatch-verdier til nytt system.
  */
 function normalize_theme(?string $t): string {
-    $t = trim((string)$t);
-    if ($t === '') return 'yeti';
+    $t = trim(strtolower((string)$t));
+    if ($t === '') return 'standard';
 
-    $lower = strtolower($t);
+    $validThemes = ['standard', 'mork', 'kitty'];
+    if (in_array($t, $validThemes, true)) return $t;
 
-    // Hvis noen gamle verdier er lagret med store bokstaver:
+    // Legacy bootswatch → standard som fallback
     $legacyMap = [
-        'yeti'  => 'yeti',
-        'slate' => 'slate',
-        'cosmo' => 'cosmo',
-        'journal' => 'journal',
-        'quartz' => 'quartz',
-        'superhero' => 'superhero',
-        'kitty' => 'kitty',
+        'yeti'      => 'standard',
+        'cosmo'     => 'standard',
+        'journal'   => 'standard',
+        'slate'     => 'mork',
+        'quartz'    => 'mork',
+        'superhero' => 'mork',
     ];
 
-    return $legacyMap[$lower] ?? 'yeti';
+    return $legacyMap[$t] ?? 'standard';
 }
 
-// Temaene du ønsket (matcher mappenavn under /public/assets/bootswatch/)
+// Egendefinerte temaer (matcher mapper under /public/assets/themes/)
 $availableThemes = [
-    'cosmo'     => 'Cosmo',
-    'journal'   => 'Journal',
-    'quartz'    => 'Quartz',
-    'slate'     => 'Slate (mørk)',
-    'superhero' => 'Superhero (mørk)',
-    'yeti'      => 'Yeti (standard)',
-    'kitty'     => 'Kitty',
+    'standard' => 'Standard',
+    'mork'     => 'Mørk',
+    'kitty'    => 'Kitty',
 ];
 
 // Hent gjeldende settings
 $stmt = $pdo->prepare('SELECT theme, avatar_path FROM user_settings WHERE user_id = :user_id');
 $stmt->execute([':user_id' => $userId]);
 $currentSettings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-    'theme'       => 'yeti',
+    'theme'       => 'standard',
     'avatar_path' => null,
 ];
 
-$currentTheme  = normalize_theme($currentSettings['theme'] ?? 'yeti');
+$currentTheme  = normalize_theme($currentSettings['theme'] ?? 'standard');
 $currentAvatar = $currentSettings['avatar_path'] ?? null;
 
 // Håndter lagring av utseende
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_appearance'])) {
-    $theme = normalize_theme($_POST['theme'] ?? 'yeti');
+    $theme = normalize_theme($_POST['theme'] ?? 'standard');
     if (!array_key_exists($theme, $availableThemes)) {
-        $theme = 'yeti';
+        $theme = 'standard';
     }
 
     $avatarPath = $currentAvatar;
@@ -432,34 +428,27 @@ try {
 $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 ?>
 
-<!-- Live theme preview (bytter bootswatch-css i <head>) -->
+<!-- Live tema-forhåndsvisning -->
 <script>
 (function () {
-    function findThemeLink() {
-        // 1) Hvis header allerede har en link med id:
-        var byId = document.getElementById('bootswatchTheme');
-        if (byId) return byId;
-
-        // 2) Ellers: finn første stylesheet som peker på /assets/bootswatch/
-        var links = document.querySelectorAll('link[rel="stylesheet"]');
-        for (var i = 0; i < links.length; i++) {
-            var href = links[i].getAttribute('href') || '';
-            if (href.indexOf('/assets/bootswatch/') !== -1) return links[i];
-        }
-
-        // 3) Opprett en hvis ingen finnes
-        var l = document.createElement('link');
-        l.rel = 'stylesheet';
-        l.id = 'bootswatchTheme';
-        document.head.appendChild(l);
-        return l;
-    }
-
     function setTheme(themeKey) {
-        var link = findThemeLink();
-        link.id = 'bootswatchTheme';
-        link.href = '/assets/bootswatch/' + themeKey + '/bootstrap.min.css';
-        link.setAttribute('data-theme', themeKey);
+        var bsLink = document.getElementById('themeBootstrap');
+        if (!bsLink) {
+            bsLink = document.createElement('link');
+            bsLink.rel = 'stylesheet';
+            bsLink.id  = 'themeBootstrap';
+            document.head.prepend(bsLink);
+        }
+        bsLink.href = '/assets/themes/' + themeKey + '/bootstrap.min.css';
+
+        var overlay = document.getElementById('themeOverlay');
+        if (!overlay) {
+            overlay = document.createElement('link');
+            overlay.rel = 'stylesheet';
+            overlay.id  = 'themeOverlay';
+            bsLink.insertAdjacentElement('afterend', overlay);
+        }
+        overlay.href = '/assets/themes/' + themeKey + '/theme.css';
     }
 
     window.__setBootswatchTheme = setTheme;
@@ -664,7 +653,7 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 
         <form method="post" enctype="multipart/form-data" class="mt-2" style="max-width: 480px;">
             <div class="mb-3">
-                <label for="theme" class="form-label">Tema</label>
+                <label for="theme" class="form-label">Fargetema</label>
                 <select
                     id="theme"
                     name="theme"
