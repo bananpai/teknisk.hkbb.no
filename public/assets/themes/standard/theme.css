@@ -1,0 +1,59 @@
+/* ─── Standard tema: lys bakgrunn, mørk profesjonell meny ─── */
+
+:root {
+    /* Sidebar */
+    --ts-sidebar-bg: #1e2b3c;
+    --ts-sidebar-hover: rgba(255,255,255,0.08);
+    --ts-sidebar-active: rgba(37,99,235,0.22);
+    --ts-sidebar-text: rgba(203,213,225,0.92);
+    --ts-sidebar-border: rgba(255,255,255,0.07);
+
+    /* Topbar */
+    --ts-topbar-bg: #1e2b3c;
+    --ts-topbar-border: rgba(255,255,255,0.07);
+
+    /* Bootstrap overrides */
+    --bs-body-bg: #f8fafc;
+    --bs-body-color: #1e293b;
+    --bs-secondary-color: #64748b;
+    --bs-tertiary-bg: #f1f5f9;
+    --bs-border-color: #e2e8f0;
+    --bs-link-color: #2563eb;
+    --bs-link-hover-color: #1d4ed8;
+}
+
+/* Primærknapper */
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #2563eb;
+    --bs-btn-border-color: #2563eb;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #1d4ed8;
+    --bs-btn-hover-border-color: #1d4ed8;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #1e40af;
+    --bs-btn-active-border-color: #1e40af;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #2563eb;
+    --bs-btn-disabled-border-color: #2563eb;
+    --bs-btn-focus-shadow-rgb: 37, 99, 235;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #2563eb;
+    --bs-btn-border-color: #2563eb;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #2563eb;
+    --bs-btn-hover-border-color: #2563eb;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #2563eb;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: #2563eb;
+}
+
+.text-primary { color: #2563eb !important; }
+.bg-primary   { background-color: #2563eb !important; }
+.border-primary { border-color: #2563eb !important; }

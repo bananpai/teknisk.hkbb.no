@@ -8,9 +8,9 @@ declare(strict_types=1);
 use App\Database;
 
 // ---------------------------------------------------------
-// Tema (Bootswatch)
+// Tema
 // ---------------------------------------------------------
-$defaultTheme    = 'yeti';
+$defaultTheme    = 'standard';
 $bootswatchTheme = $defaultTheme;
 
 // 1) Hvis siden selv har satt $currentTheme, bruk den
@@ -44,7 +44,50 @@ if (isset($currentTheme) && is_string($currentTheme) && $currentTheme !== '') {
 $bootswatchTheme = preg_replace('~[^a-z]~', '', $bootswatchTheme) ?: $defaultTheme;
 
 // ---------------------------------------------------------
-// Print-mode: ?print=1 gir “flat” layout uten app-shell/sidebar/topbar
+// Egendefinerte temaer i /assets/themes/ (Standard, Mørk, Kitty)
+// Faller tilbake til bootswatch-temaer for bakoverkompatibilitet
+// ---------------------------------------------------------
+$assetsBase     = __DIR__ . '/../assets';
+$customThemeDir = "{$assetsBase}/themes/{$bootswatchTheme}";
+$useCustomTheme = is_file("{$customThemeDir}/bootstrap.min.css");
+
+if ($useCustomTheme) {
+    $bsVer          = (string)filemtime("{$customThemeDir}/bootstrap.min.css");
+    $themeBootstrapHref = "/assets/themes/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
+
+    $hasThemeOverlay = is_file("{$customThemeDir}/theme.css");
+    $themeOverlayHref = $hasThemeOverlay
+        ? '/assets/themes/' . $bootswatchTheme . '/theme.css?v=' . filemtime("{$customThemeDir}/theme.css")
+        : null;
+} else {
+    // Fallback: bootswatch
+    $bootswatchFs = "{$assetsBase}/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
+    if (!is_file($bootswatchFs)) {
+        $bootswatchTheme = $defaultTheme;
+        $customThemeDir  = "{$assetsBase}/themes/{$bootswatchTheme}";
+        if (is_file("{$customThemeDir}/bootstrap.min.css")) {
+            $useCustomTheme = true;
+            $bsVer = (string)filemtime("{$customThemeDir}/bootstrap.min.css");
+            $themeBootstrapHref = "/assets/themes/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
+            $hasThemeOverlay    = is_file("{$customThemeDir}/theme.css");
+            $themeOverlayHref   = $hasThemeOverlay
+                ? '/assets/themes/' . $bootswatchTheme . '/theme.css?v=' . filemtime("{$customThemeDir}/theme.css")
+                : null;
+            $bootswatchFs = '';
+        } else {
+            $bootswatchFs = "{$assetsBase}/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
+        }
+    }
+    if (!$useCustomTheme) {
+        $bsVer = is_file($bootswatchFs) ? (string)filemtime($bootswatchFs) : (string)time();
+        $themeBootstrapHref = "/assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css?v={$bsVer}";
+        $themeOverlayHref   = null;
+        $hasThemeOverlay    = false;
+    }
+}
+
+// ---------------------------------------------------------
+// Print-mode: ?print=1 gir "flat" layout uten app-shell/sidebar/topbar
 // (hindrer Chromium print preview som låser seg)
 // ---------------------------------------------------------
 $printMode = (($_GET['print'] ?? '') === '1');
@@ -60,33 +103,7 @@ $twoFaOtpauthUri = $twoFaOtpauthUri ?? null;
 // Sidebar-tilstand (kan brukes i layout)
 $sidebarExpanded = ($_COOKIE['sidebar_expanded'] ?? '1') === '1';
 
-// ---------------------------------------------------------
-// Lokale assets (lokale CSS-filer)
-// Forutsetter struktur:
-//  - /public/assets/bootswatch/<theme>/bootstrap.min.css
-//  - /public/assets/bootstrap-icons/bootstrap-icons.css  (+ fonts i samme mappe)
-//  - /public/assets/app/app.css
-//  - /public/assets/app/print.css
-// ---------------------------------------------------------
-$bootswatchFs = __DIR__ . "/../assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-if (!is_file($bootswatchFs)) {
-    $bootswatchTheme = $defaultTheme;
-    $bootswatchFs    = __DIR__ . "/../assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-}
-
-// cache-busting (endrer URL når fila endres)
-$ver = is_file($bootswatchFs) ? (string)filemtime($bootswatchFs) : (string)time();
-$bootswatchHref = "/assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css?v={$ver}";
-
-
-$iconsHref      = "/assets/bootstrap-icons/bootstrap-icons.css";
-
-// Valgfritt: hvis tema ikke finnes lokalt, fallback til default tema (lokalt)
-$bootswatchFs = __DIR__ . "/../assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-if (!is_file($bootswatchFs)) {
-    $bootswatchTheme = $defaultTheme;
-    $bootswatchHref  = "/assets/bootswatch/{$bootswatchTheme}/bootstrap.min.css";
-}
+$iconsHref = "/assets/bootstrap-icons/bootstrap-icons.css";
 ?>
 <!doctype html>
 <html lang="no">
@@ -95,22 +112,27 @@ if (!is_file($bootswatchFs)) {
     <title><?= htmlspecialchars($pageTitle ?? 'Teknisk', ENT_QUOTES, 'UTF-8') ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Lokalt Bootswatch / Bootstrap -->
-    <link rel="stylesheet" href="<?= htmlspecialchars($bootswatchHref, ENT_QUOTES, 'UTF-8') ?>">
+    <!-- Bootstrap / tema-base -->
+    <link id="themeBootstrap" rel="stylesheet" href="<?= htmlspecialchars($themeBootstrapHref, ENT_QUOTES, 'UTF-8') ?>">
+
+    <?php if ($themeOverlayHref): ?>
+    <!-- Tema-overrides -->
+    <link id="themeOverlay" rel="stylesheet" href="<?= htmlspecialchars($themeOverlayHref, ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
 
     <!-- Lokale Bootstrap Icons -->
     <link rel="stylesheet" href="<?= htmlspecialchars($iconsHref, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- App CSS (samlet) - droppes i printMode for å unngå layout-loop -->
     <?php if (!$printMode): ?>
-        <link rel="stylesheet" href="/assets/app/app.css?v=2">
+        <link rel="stylesheet" href="/assets/app/app.css?v=3">
     <?php endif; ?>
 
     <!-- Global print overrides (kun print) -->
     <link rel="stylesheet" href="/assets/app/print.css?v=2" media="print">
 
     <?php if ($printMode): ?>
-        <!-- Litt “trygg” base i printMode -->
+        <!-- Litt "trygg" base i printMode -->
         <style>
             body { background:#fff; }
             .no-print { display:none !important; }

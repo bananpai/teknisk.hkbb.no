@@ -1,0 +1,86 @@
+/* ─── Kitty tema: rosa og søt ─── */
+
+:root {
+    /* Sidebar */
+    --ts-sidebar-bg: #c2185b;
+    --ts-sidebar-hover: rgba(255,255,255,0.15);
+    --ts-sidebar-active: rgba(255,255,255,0.22);
+    --ts-sidebar-text: rgba(255,255,255,0.97);
+    --ts-sidebar-border: rgba(255,255,255,0.14);
+
+    /* Topbar */
+    --ts-topbar-bg: #c2185b;
+    --ts-topbar-border: rgba(255,255,255,0.14);
+
+    /* Bootstrap overrides */
+    --bs-body-bg: #fff5f9;
+    --bs-body-color: #3d0026;
+    --bs-secondary-color: #9e4368;
+    --bs-tertiary-bg: #fce4ec;
+    --bs-border-color: #f8bbd0;
+    --bs-link-color: #d81b60;
+    --bs-link-hover-color: #c2185b;
+
+    /* Rundere hjørner for søtere look */
+    --bs-border-radius:    0.5rem;
+    --bs-border-radius-sm: 0.35rem;
+    --bs-border-radius-lg: 0.75rem;
+    --bs-border-radius-xl: 1rem;
+}
+
+/* Gradient sidebar */
+.app-sidebar {
+    background: linear-gradient(180deg, #e91e63 0%, #ad1457 100%) !important;
+}
+
+/* Primærknapper */
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #e91e63;
+    --bs-btn-border-color: #e91e63;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #c2185b;
+    --bs-btn-hover-border-color: #c2185b;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #ad1457;
+    --bs-btn-active-border-color: #ad1457;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #e91e63;
+    --bs-btn-disabled-border-color: #e91e63;
+    --bs-btn-focus-shadow-rgb: 233, 30, 99;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #e91e63;
+    --bs-btn-border-color: #e91e63;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #e91e63;
+    --bs-btn-hover-border-color: #e91e63;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #e91e63;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: #e91e63;
+}
+
+.text-primary   { color: #e91e63 !important; }
+.bg-primary     { background-color: #e91e63 !important; }
+.border-primary { border-color: #e91e63 !important; }
+
+.badge.bg-primary,
+.badge.text-bg-primary {
+    background-color: #e91e63 !important;
+}
+
+/* Litt mykere kort */
+.card {
+    border-color: #f8bbd0;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #e91e63;
+    box-shadow: 0 0 0 0.25rem rgba(233,30,99,0.2);
+}
