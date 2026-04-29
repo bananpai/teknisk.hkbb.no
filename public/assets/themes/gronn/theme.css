@@ -1,0 +1,568 @@
+/* ================================================================
+   GRØNN TEMA – Profesjonell administrasjonsflate
+   Stil: moderne backoffice, rolig og polert
+   Base: vanilla Bootstrap 5.3
+   ================================================================ */
+
+/* ── Fargepalett og CSS-variabler ── */
+:root {
+    /* Grønn aksent – primærhandlinger */
+    --brand-400:     #34d399;
+    --brand-500:     #10b981;
+    --brand-600:     #059669;
+    --brand-700:     #047857;
+    --brand-rgb:     16, 185, 129;
+
+    /* Sekundær – gråblå toner */
+    --secondary-100: #f1f5f9;
+    --secondary-200: #e2e8f0;
+    --secondary-300: #cbd5e1;
+    --secondary-400: #94a3b8;
+    --secondary-500: #64748b;
+
+    /* Overflater – svært lyse og luftige */
+    --surface-0:     #ffffff;
+    --surface-1:     #f8fafc;
+    --surface-2:     #f1f5f9;
+    --text-primary:  #1e293b;
+    --text-muted:    #64748b;
+    --border:        #e2e8f0;
+    --border-light:  #f1f5f9;
+
+    /* Bootstrap-overrides */
+    --bs-primary:           var(--brand-500);
+    --bs-primary-rgb:       var(--brand-rgb);
+    --bs-body-bg:           var(--surface-1);
+    --bs-body-color:        var(--text-primary);
+    --bs-secondary-color:   var(--text-muted);
+    --bs-tertiary-bg:       var(--surface-2);
+    --bs-border-color:      var(--border);
+    --bs-link-color:        var(--brand-600);
+    --bs-link-hover-color:  var(--brand-700);
+    --bs-card-bg:           var(--surface-0);
+    --bs-border-radius:     0.375rem;
+    --bs-border-radius-sm:  0.25rem;
+    --bs-border-radius-lg:  0.5rem;
+
+    /* Sidebar – mørk grønn-grå */
+    --ts-sidebar-bg:          #1e2b24;
+    --ts-sidebar-border:      rgba(255, 255, 255, 0.08);
+    --ts-sidebar-text:        rgba(210, 235, 220, 0.82);
+    --ts-sidebar-text-active: #edf7f1;
+    --ts-sidebar-hover:       rgba(255, 255, 255, 0.07);
+    --ts-sidebar-active-bg:   rgba(16, 185, 129, 0.20);
+    --ts-sidebar-active-line: var(--brand-400);
+    --ts-sidebar-section:     rgba(160, 200, 175, 0.48);
+
+    /* Topbar – følger sidebar */
+    --ts-topbar-bg:           var(--ts-sidebar-bg);
+    --ts-topbar-border:       var(--ts-sidebar-border);
+    --ts-topbar-text:         var(--ts-sidebar-text-active);
+    --ts-topbar-text-muted:   var(--ts-sidebar-text);
+
+    /* Content */
+    --ts-content-bg:          #f1f5f9;
+
+    /* Graf-farger */
+    --chart-line:         var(--brand-500);
+    --chart-line-fill:    rgba(16, 185, 129, 0.08);
+    --chart-grid:         rgba(15, 23, 42, 0.06);
+    --chart-grid-accent:  rgba(15, 23, 42, 0.10);
+    --chart-tick:         #94a3b8;
+    --chart-dot:          var(--brand-500);
+    --chart-dot-bg:       #ffffff;
+}
+
+/* ── Sidebar: mørk grønn-grå – element-overrides ── */
+.sidebar-brand-name {
+    color: var(--ts-sidebar-text-active);
+}
+
+.sidebar-brand-sub {
+    color: var(--ts-sidebar-section);
+}
+
+.sidebar-brand-icon {
+    background: var(--brand-500);
+}
+
+.user-name {
+    color: var(--ts-sidebar-text-active);
+}
+
+.user-role-label {
+    color: var(--ts-sidebar-section);
+}
+
+.user-avatar-wrap {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.13);
+    color: var(--ts-sidebar-text-active);
+}
+
+.sidebar-user-dropdown a.link-danger {
+    color: #f87171;
+}
+
+.sidebar-user-dropdown a.link-danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+}
+
+/* ── Typografi ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+/* ── Knapper ── */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+/* Primær – grønn */
+.btn-primary {
+    --bs-btn-color:               #fff;
+    --bs-btn-bg:                  var(--brand-500);
+    --bs-btn-border-color:        var(--brand-500);
+    --bs-btn-hover-color:         #fff;
+    --bs-btn-hover-bg:            var(--brand-600);
+    --bs-btn-hover-border-color:  var(--brand-600);
+    --bs-btn-active-color:        #fff;
+    --bs-btn-active-bg:           var(--brand-700);
+    --bs-btn-active-border-color: var(--brand-700);
+    --bs-btn-disabled-bg:         var(--brand-500);
+    --bs-btn-disabled-border-color: var(--brand-500);
+    --bs-btn-focus-shadow-rgb:    var(--brand-rgb);
+}
+
+.btn-outline-primary {
+    --bs-btn-color:              var(--brand-600);
+    --bs-btn-border-color:       var(--brand-500);
+    --bs-btn-hover-color:        #fff;
+    --bs-btn-hover-bg:           var(--brand-500);
+    --bs-btn-hover-border-color: var(--brand-500);
+    --bs-btn-active-color:       #fff;
+    --bs-btn-active-bg:          var(--brand-600);
+    --bs-btn-focus-shadow-rgb:   var(--brand-rgb);
+}
+
+/* Sekundær – gråblå */
+.btn-secondary {
+    --bs-btn-bg:                  var(--secondary-200);
+    --bs-btn-border-color:        var(--secondary-300);
+    --bs-btn-color:               var(--secondary-500);
+    --bs-btn-hover-bg:            var(--secondary-300);
+    --bs-btn-hover-border-color:  var(--secondary-400);
+    --bs-btn-hover-color:         var(--text-primary);
+    --bs-btn-active-bg:           #b0bdc9;
+    --bs-btn-active-color:        var(--text-primary);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color:              var(--secondary-500);
+    --bs-btn-border-color:       var(--secondary-300);
+    --bs-btn-hover-bg:           var(--secondary-200);
+    --bs-btn-hover-border-color: var(--secondary-300);
+    --bs-btn-hover-color:        var(--text-primary);
+}
+
+/* ── Kort – luftige med drop-shadow ── */
+.card {
+    --bs-card-border-color: var(--border);
+    --bs-card-box-shadow:   0 2px 10px rgba(15, 23, 42, 0.09), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --bs-card-cap-bg:       var(--surface-1);
+    background-color:       var(--surface-0);
+    border: 1px solid var(--border);
+    transition: box-shadow 0.18s ease;
+}
+
+.card:hover {
+    --bs-card-box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12), 0 1px 5px rgba(15, 23, 42, 0.06);
+}
+
+.card-header {
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+}
+
+.card-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+/* ── Tabeller – luftig og ryddig ── */
+.table {
+    --bs-table-striped-bg:    rgba(15, 23, 42, 0.018);
+    --bs-table-hover-bg:      rgba(16, 185, 129, 0.04);
+    --bs-table-border-color:  var(--border);
+    font-size: 0.875rem;
+    margin-bottom: 0;
+}
+
+.table > :not(caption) > * > * {
+    padding: 0.65rem 0.85rem;
+    vertical-align: middle;
+}
+
+.table thead th {
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem 0.85rem;
+    white-space: nowrap;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid var(--border-light);
+    transition: background 0.1s ease;
+}
+
+.table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(16, 185, 129, 0.04);
+}
+
+/* Statusmarkør i tabellrad – liten fargeprikk */
+.table-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.table-status-dot.dot-green  { background: var(--brand-500); }
+.table-status-dot.dot-yellow { background: #f59e0b; }
+.table-status-dot.dot-red    { background: #ef4444; }
+.table-status-dot.dot-gray   { background: var(--secondary-400); }
+.table-status-dot.dot-blue   { background: #3b82f6; }
+
+/* ── Skjema – rolig formspråk ── */
+.form-control,
+.form-select {
+    border-color: var(--border);
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:hover:not(:focus),
+.form-select:hover:not(:focus) {
+    border-color: var(--secondary-400);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.10);
+    background-color: var(--surface-0);
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+}
+
+.form-text {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.input-group-text {
+    background-color: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+/* ── Navigasjon – piller og faner ── */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: var(--brand-500);
+    color: #fff;
+}
+
+.nav-pills .nav-link {
+    color: var(--text-muted);
+}
+
+.nav-pills .nav-link:hover {
+    color: var(--text-primary);
+    background-color: var(--surface-2);
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: var(--brand-500);
+    color: var(--brand-600);
+    font-weight: 600;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: var(--text-primary);
+}
+
+/* ── Varsler ── */
+.alert-primary {
+    --bs-alert-color:       var(--brand-700);
+    --bs-alert-bg:          #ecfdf5;
+    --bs-alert-border-color: #a7f3d0;
+}
+
+.alert-success {
+    --bs-alert-color:       #065f46;
+    --bs-alert-bg:          #ecfdf5;
+    --bs-alert-border-color: #a7f3d0;
+}
+
+/* ── Badges – kompakte statusmarkører ── */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    font-size: 0.72em;
+}
+
+.bg-primary,
+.text-bg-primary { background-color: var(--brand-500) !important; }
+.text-primary    { color: var(--brand-500) !important; }
+.border-primary  { border-color: var(--brand-500) !important; }
+
+/* Diskrete statusbadges */
+.badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.2em 0.55em;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.badge-status-green {
+    background: rgba(16, 185, 129, 0.10);
+    color: var(--brand-700);
+}
+
+.badge-status-yellow {
+    background: rgba(245, 158, 11, 0.10);
+    color: #92400e;
+}
+
+.badge-status-red {
+    background: rgba(239, 68, 68, 0.10);
+    color: #991b1b;
+}
+
+.badge-status-gray {
+    background: var(--secondary-100);
+    color: var(--secondary-500);
+}
+
+.badge-status-blue {
+    background: rgba(59, 130, 246, 0.10);
+    color: #1d4ed8;
+}
+
+/* ── Dropdown – luftig ── */
+.dropdown-menu {
+    --bs-dropdown-border-color: var(--border);
+    --bs-dropdown-bg:           var(--surface-0);
+    box-shadow: 0 4px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+    border-radius: var(--bs-border-radius-lg);
+}
+
+.dropdown-item {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--surface-1);
+    color: var(--brand-600);
+}
+
+.dropdown-divider {
+    border-color: var(--border);
+}
+
+/* ── Modal ── */
+.modal-header {
+    background-color: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-footer {
+    background-color: var(--surface-1);
+    border-top: 1px solid var(--border);
+}
+
+.modal-content {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* ── List group ── */
+.list-group-item {
+    --bs-list-group-border-color: var(--border);
+    --bs-list-group-bg:           var(--surface-0);
+    font-size: 0.875rem;
+}
+
+.list-group-item-action:hover {
+    background-color: var(--surface-1);
+    color: var(--text-primary);
+}
+
+.list-group-item.active {
+    background-color: var(--brand-500);
+    border-color:     var(--brand-500);
+}
+
+/* ── Progress ── */
+.progress {
+    background-color: var(--secondary-200);
+    height: 5px;
+    border-radius: 99px;
+}
+
+.progress-bar {
+    background-color: var(--brand-500);
+    border-radius: 99px;
+}
+
+/* ── Pagination ── */
+.page-link {
+    color: var(--text-muted);
+    border-color: var(--border);
+    font-size: 0.875rem;
+}
+
+.page-link:hover {
+    color: var(--brand-600);
+    background-color: var(--surface-1);
+    border-color: var(--border);
+}
+
+.page-item.active .page-link {
+    background-color: var(--brand-500);
+    border-color:     var(--brand-500);
+    color:            #fff;
+}
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+    font-size: 0.8rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--secondary-400);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-muted);
+}
+
+/* ── Toasts / snackbars ── */
+.toast {
+    border-color: var(--border);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* ── Tooltip ── */
+.tooltip-inner {
+    background-color: var(--text-primary);
+    font-size: 0.78rem;
+}
+
+/* ── Hjelpeklasser for grafer (Chart.js) ── */
+.chart-wrap {
+    position: relative;
+    container-type: inline-size;
+}
+
+.chart-wrap canvas {
+    display: block;
+    width: 100% !important;
+}
+
+/* ── Stat-kort (KPI) ── */
+.stat-card {
+    background: var(--surface-0);
+    border: 1px solid var(--border);
+    border-radius: var(--bs-border-radius-lg);
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.stat-card-value {
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+
+.stat-card-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+.stat-card-delta {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+}
+
+.stat-card-delta.up   { color: var(--brand-600); }
+.stat-card-delta.down { color: #dc2626; }
+.stat-card-delta.flat { color: var(--secondary-400); }
+
+/* ── Tomme tilstander ── */
+.empty-state {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 2rem;
+    opacity: 0.35;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.empty-state-body {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}

@@ -85,6 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Slå av 2FA for brukeren – neste innlogging vil trigge nytt oppsett
             $stmt = $pdo->prepare('UPDATE users SET twofa_enabled = 0, twofa_secret = NULL WHERE id = :id');
             $stmt->execute([':id' => $userId]);
+
+        } elseif ($action === 'delete_user') {
+            // Ikke tillat å slette seg selv
+            $stmt = $pdo->prepare('SELECT username FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $userId]);
+            $targetUsername = $stmt->fetchColumn();
+
+            if ($targetUsername && $targetUsername !== $username) {
+                // Relaterte tabeller med CASCADE slettes automatisk
+                $pdo->prepare('DELETE FROM users WHERE id = :id')->execute([':id' => $userId]);
+            }
         }
     }
 
@@ -95,27 +106,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ---------------------------------------------------------
 // Hent brukere
 // ---------------------------------------------------------
+use App\Support\Crypto;
+
 $search = trim($_GET['q'] ?? '');
 
-if ($search !== '') {
-    $stmt = $pdo->prepare(
-        'SELECT id, username, display_name, email, is_active, last_login_at, twofa_enabled
-           FROM users
-          WHERE username LIKE :q
-             OR display_name LIKE :q
-             OR email LIKE :q
-          ORDER BY username'
-    );
-    $stmt->execute([':q' => '%' . $search . '%']);
-} else {
-    $stmt = $pdo->query(
-        'SELECT id, username, display_name, email, is_active, last_login_at, twofa_enabled
-           FROM users
-          ORDER BY username'
-    );
-}
+// Last alltid alle brukere – søk på krypterte felt gjøres i PHP
+$allUsers = $pdo->query(
+    'SELECT id, username, auth_provider, display_name, email, is_active, last_login_at, twofa_enabled
+       FROM users
+      ORDER BY username'
+)->fetchAll(PDO::FETCH_ASSOC);
 
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Dekrypter persondata og filtrer på søkestreng
+$users = [];
+foreach ($allUsers as $u) {
+    $u['display_name'] = Crypto::decryptOrNull($u['display_name']);
+    $u['email']        = Crypto::decryptOrNull($u['email']);
+
+    if ($search !== '') {
+        $haystack = mb_strtolower($u['username'] . ' ' . ($u['display_name'] ?? '') . ' ' . ($u['email'] ?? ''));
+        if (!str_contains($haystack, mb_strtolower($search))) {
+            continue;
+        }
+    }
+
+    $users[] = $u;
+}
 ?>
 
 <div class="mb-3">
@@ -158,6 +174,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <th>Bruker</th>
                             <th>Navn</th>
                             <th>E-post</th>
+                            <th>Kilde</th>
                             <th>Aktiv</th>
                             <th>2FA</th>
                             <th>Sist innlogget</th>
@@ -167,13 +184,14 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <tbody>
                     <?php foreach ($users as $u): ?>
                         <?php
-                        $id          = (int)$u['id'];
-                        $usernameRow = $u['username'];
-                        $name        = $u['display_name'] ?: $usernameRow;
-                        $email       = $u['email'] ?: '';
-                        $isActive    = (bool)$u['is_active'];
-                        $twofa       = (bool)$u['twofa_enabled'];
-                        $lastLogin   = $u['last_login_at'];
+                        $id           = (int)$u['id'];
+                        $usernameRow  = $u['username'];
+                        $name         = ($u['display_name'] ?? '') ?: $usernameRow;
+                        $email        = $u['email'] ?? '';
+                        $isActive     = (bool)$u['is_active'];
+                        $twofa        = (bool)$u['twofa_enabled'];
+                        $lastLogin    = $u['last_login_at'];
+                        $authProvider = $u['auth_provider'] ?? 'ad';
                         ?>
                         <tr class="<?php echo $isActive ? '' : 'table-secondary'; ?>">
                             <td><?php echo $id; ?></td>
@@ -186,6 +204,17 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     </a>
                                 <?php else: ?>
                                     <span class="text-muted small">–</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($authProvider === 'entra'): ?>
+                                    <span class="badge text-bg-primary" title="Microsoft Entra ID (Azure AD)">
+                                        <i class="bi bi-microsoft me-1"></i>Entra ID
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge text-bg-secondary" title="Active Directory (lokal AD)">
+                                        <i class="bi bi-server me-1"></i>AD
+                                    </span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -229,6 +258,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <i class="bi bi-sliders me-1"></i> Administrer
                                 </a>
 
+                                <?php if ($twofa): ?>
                                 <form method="post" class="d-inline">
                                     <input type="hidden" name="user_id" value="<?php echo $id; ?>">
                                     <input type="hidden" name="action" value="reset_2fa">
@@ -240,6 +270,21 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <i class="bi bi-shield-x me-1"></i> Reset 2FA
                                     </button>
                                 </form>
+                                <?php endif; ?>
+
+                                <?php if ($usernameRow !== $username): ?>
+                                <form method="post" class="d-inline ms-1">
+                                    <input type="hidden" name="user_id" value="<?php echo $id; ?>">
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-xs btn-danger"
+                                        onclick="return confirm('Slett brukeren «<?php echo htmlspecialchars($usernameRow, ENT_QUOTES, 'UTF-8'); ?>» permanent? Dette kan ikke angres.');"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

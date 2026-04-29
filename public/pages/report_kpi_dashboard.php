@@ -901,7 +901,10 @@ function entry_url(string $periodMonth, int $metricId, int $departmentId): strin
     </div>
 </div>
 
-<section class="card shadow-sm mb-3">
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Periode</span>
+    </div>
     <div class="card-body">
         <form class="row g-2 align-items-end" method="get">
             <input type="hidden" name="page" value="report_kpi_dashboard">

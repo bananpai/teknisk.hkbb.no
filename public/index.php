@@ -233,6 +233,12 @@ if ($ipFilterEnabled && !empty($allowRules)) {
 // Routing: logout / auth guard
 // ---------------------------------------------------------
 
+// Entra ID OAuth2-callback (redirect_uri = https://teknisk.hkbb.no/)
+if (isset($_GET['code'], $_GET['state']) && isset($_SESSION['entra_state'])) {
+    require __DIR__ . '/login/callback.php';
+    exit;
+}
+
 // LOGOUT
 if ($page === 'logout') {
     $_SESSION = [];
@@ -328,81 +334,88 @@ $twoFaSecret     = null;
 // Har denne økten allerede en godkjent 2FA?
 $twoFaVerifiedSession = !empty($_SESSION['twofa_verified']);
 
-// Hent status fra DB
-$dbTwoFa = $twoFaStorage->loadTwoFa($username); // ['enabled' => bool, 'secret' => ?string]
-
-$twoFaEnabledAccount = !empty($dbTwoFa['enabled']);
-$twoFaSecret         = $dbTwoFa['secret'] ?? null;
-
-// Hvis kontoen ikke har aktiv 2FA i databasen → tving nytt oppsett
-if (!$twoFaEnabledAccount) {
-    $_SESSION['twofa_verified'] = false;
-    $twoFaVerifiedSession       = false;
-}
-
-// ---------------------------------------------------------
-// POST: 6-sifret kode fra 2FA-overlay
-// ---------------------------------------------------------
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page !== 'login' && isset($_POST['totp_code'])) {
-    $code = $_POST['totp_code'] ?? '';
-    $code = preg_replace('/\s+/', '', $code);
-
-    if ($code === '') {
-        $twoFaError = 'Du må skrive inn koden fra autentiserings-appen.';
-    } elseif (empty($twoFaSecret)) {
-        $twoFaError = 'Fant ikke 2FA-nøkkel. Last siden på nytt og prøv igjen.';
-    } else {
-        $totp = TOTP::create($twoFaSecret);
-        $totp->setLabel('Teknisk (' . $username . ')');
-        $totp->setIssuer('Teknisk');
-
-        // Aksepter litt klokkedrift (±1 tidsvindu)
-        if ($totp->verify($code, null, 1)) {
-            $_SESSION['twofa_verified'] = true;
-            $twoFaVerifiedSession       = true;
-
-            if (!$twoFaEnabledAccount) {
-                $twoFaStorage->saveTwoFa($username, true, $twoFaSecret);
-                $twoFaEnabledAccount = true;
-            }
-
-            $twoFaError = null;
-        } else {
-            $twoFaError = 'Feil kode. Prøv igjen (sjekk også tid/klokke på mobilen).';
-        }
-    }
-}
-
-// Les sesjonsstatus på nytt
-$twoFaVerifiedSession = !empty($_SESSION['twofa_verified']);
-
-// ---------------------------------------------------------
-// Bestem hvilket 2FA-vindu vi skal vise
-// ---------------------------------------------------------
-
-if ($twoFaVerifiedSession) {
-    $twoFaScreen = 'none';
+// Entra ID-brukere trenger ikke 2FA
+if (($_SESSION['auth_provider'] ?? '') === 'entra') {
+    $twoFaVerifiedSession       = true;
+    $_SESSION['twofa_verified'] = true;
+    $twoFaEnabledAccount        = false;
 } else {
-    if ($twoFaEnabledAccount && !empty($twoFaSecret)) {
-        $twoFaScreen = 'code';
-    } else {
-        $twoFaScreen = 'setup';
+    // Hent status fra DB
+    $dbTwoFa = $twoFaStorage->loadTwoFa($username); // ['enabled' => bool, 'secret' => ?string]
 
-        if (empty($twoFaSecret)) {
-            $totp = TOTP::create();
-            $totp->setLabel('Teknisk (' . $username . ')');
-            $totp->setIssuer('Teknisk');
+    $twoFaEnabledAccount = !empty($dbTwoFa['enabled']);
+    $twoFaSecret         = $dbTwoFa['secret'] ?? null;
 
-            $twoFaSecret = $totp->getSecret();
-            $twoFaStorage->saveTwoFa($username, false, $twoFaSecret);
+    // Hvis kontoen ikke har aktiv 2FA i databasen → tving nytt oppsett
+    if (!$twoFaEnabledAccount) {
+        $_SESSION['twofa_verified'] = false;
+        $twoFaVerifiedSession       = false;
+    }
+
+    // ---------------------------------------------------------
+    // POST: 6-sifret kode fra 2FA-overlay
+    // ---------------------------------------------------------
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page !== 'login' && isset($_POST['totp_code'])) {
+        $code = $_POST['totp_code'] ?? '';
+        $code = preg_replace('/\s+/', '', $code);
+
+        if ($code === '') {
+            $twoFaError = 'Du må skrive inn koden fra autentiserings-appen.';
+        } elseif (empty($twoFaSecret)) {
+            $twoFaError = 'Fant ikke 2FA-nøkkel. Last siden på nytt og prøv igjen.';
         } else {
             $totp = TOTP::create($twoFaSecret);
             $totp->setLabel('Teknisk (' . $username . ')');
             $totp->setIssuer('Teknisk');
-        }
 
-        $twoFaOtpauthUri = $totp->getProvisioningUri();
+            // Aksepter litt klokkedrift (±1 tidsvindu)
+            if ($totp->verify($code, null, 1)) {
+                $_SESSION['twofa_verified'] = true;
+                $twoFaVerifiedSession       = true;
+
+                if (!$twoFaEnabledAccount) {
+                    $twoFaStorage->saveTwoFa($username, true, $twoFaSecret);
+                    $twoFaEnabledAccount = true;
+                }
+
+                $twoFaError = null;
+            } else {
+                $twoFaError = 'Feil kode. Prøv igjen (sjekk også tid/klokke på mobilen).';
+            }
+        }
+    }
+
+    // Les sesjonsstatus på nytt
+    $twoFaVerifiedSession = !empty($_SESSION['twofa_verified']);
+
+    // ---------------------------------------------------------
+    // Bestem hvilket 2FA-vindu vi skal vise
+    // ---------------------------------------------------------
+
+    if ($twoFaVerifiedSession) {
+        $twoFaScreen = 'none';
+    } else {
+        if ($twoFaEnabledAccount && !empty($twoFaSecret)) {
+            $twoFaScreen = 'code';
+        } else {
+            $twoFaScreen = 'setup';
+
+            if (empty($twoFaSecret)) {
+                $totp = TOTP::create();
+                $totp->setLabel('Teknisk (' . $username . ')');
+                $totp->setIssuer('Teknisk');
+
+                $twoFaSecret = $totp->getSecret();
+                $twoFaStorage->saveTwoFa($username, false, $twoFaSecret);
+            } else {
+                $totp = TOTP::create($twoFaSecret);
+                $totp->setLabel('Teknisk (' . $username . ')');
+                $totp->setIssuer('Teknisk');
+            }
+
+            $twoFaOtpauthUri = $totp->getProvisioningUri();
+        }
     }
 }
 

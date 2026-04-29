@@ -335,22 +335,19 @@ if ($editId > 0 && !empty($serviceRouters)) {
     </div>
 <?php endif; ?>
 
-<section class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-            <h2 class="h6 mb-0">Eksisterende service-rutere</h2>
-
-            <!-- Live-søk: filtrerer mens man skriver -->
-            <div class="ms-auto" style="max-width:260px;">
-                <input
-                    type="text"
-                    id="srSearch"
-                    class="form-control form-control-sm"
-                    placeholder="Søk i navn, IP, lokasjon, grossist..."
-                >
-            </div>
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Eksisterende service-rutere</span>
+        <div style="max-width:260px;">
+            <input
+                type="text"
+                id="srSearch"
+                class="form-control form-control-sm"
+                placeholder="Søk i navn, IP, lokasjon, grossist..."
+            >
         </div>
-
+    </div>
+    <div class="card-body p-0">
         <?php if (empty($serviceRouters)): ?>
             <p class="text-muted small mb-0">Ingen service-rutere er registrert ennå.</p>
         <?php else: ?>
@@ -423,9 +420,11 @@ if ($editId > 0 && !empty($serviceRouters)) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3 <?php echo $showAddForm ? '' : 'd-none'; ?>" id="add-service-router-card">
+<section class="card mb-3 <?php echo $showAddForm ? '' : 'd-none'; ?>" id="add-service-router-card">
+    <div class="card-header">
+        <span>Legg til ny service-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Legg til ny service-router</h2>
         <p class="small text-muted mb-2">
             Legg inn en ny Service Router. Porter mot grossister konfigureres på redigeringssiden.
         </p>
@@ -481,9 +480,11 @@ if ($editId > 0 && !empty($serviceRouters)) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3" id="edit-service-router">
+<section class="card mb-3" id="edit-service-router">
+    <div class="card-header">
+        <span>Rediger service-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Rediger service-router</h2>
         <p class="small text-muted mb-2">
             Velg ✏-ikonet i listen over for å laste inn en service-router her.
             Under finner du portmapping per grossist.

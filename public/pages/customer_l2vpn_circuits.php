@@ -507,14 +507,16 @@ if ($selectedCircuit) {
 </section>
 
 <?php if ($selectedCircuit): ?>
-    <section class="card shadow-sm mb-3">
-        <div class="card-body">
-            <h2 class="h6 mb-2">
+    <section class="card mb-3">
+        <div class="card-header">
+            <span>
                 <?php echo htmlspecialchars($selectedCircuit['sambandsnr'], ENT_QUOTES, 'UTF-8'); ?>
-                <span class="text-muted">
+                <span class="fw-normal text-muted">
                     – <?php echo htmlspecialchars($selectedCircuit['vendor_name'], ENT_QUOTES, 'UTF-8'); ?>
                 </span>
-            </h2>
+            </span>
+        </div>
+        <div class="card-body">
             <p class="small text-muted mb-2">
                 SR: <strong><?php echo htmlspecialchars($srName, ENT_QUOTES, 'UTF-8'); ?></strong>,
                 ER: <strong><?php echo htmlspecialchars($erName, ENT_QUOTES, 'UTF-8'); ?></strong>,

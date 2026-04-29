@@ -94,16 +94,16 @@ $iconsHref = "/assets/bootstrap-icons/bootstrap-icons.css";
     <!-- Vanilla Bootstrap 5.3 -->
     <link id="themeBootstrap" rel="stylesheet" href="<?= htmlspecialchars($bootstrapHref, ENT_QUOTES, 'UTF-8') ?>">
 
-    <!-- Egendefinert tema -->
-    <link id="themeOverlay" rel="stylesheet" href="<?= htmlspecialchars($themeHref, ENT_QUOTES, 'UTF-8') ?>">
-
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="<?= htmlspecialchars($iconsHref, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- App CSS (samlet) - droppes i printMode for å unngå layout-loop -->
     <?php if (!$printMode): ?>
-        <link rel="stylesheet" href="/assets/app/app.css?v=4">
+        <link rel="stylesheet" href="/assets/app/app.css?v=7">
     <?php endif; ?>
+
+    <!-- Egendefinert tema (lastes sist slik at tema-variabler vinner over app.css :root) -->
+    <link id="themeOverlay" rel="stylesheet" href="<?= htmlspecialchars($themeHref, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- Global print overrides (kun print) -->
     <link rel="stylesheet" href="/assets/app/print.css?v=2" media="print">

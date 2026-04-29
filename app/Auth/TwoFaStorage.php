@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace App\Auth;
 
+use App\Support\Crypto;
 use PDO;
 
 class TwoFaStorage
@@ -39,14 +40,13 @@ class TwoFaStorage
         $groupsJson = json_encode($adGroups, JSON_UNESCAPED_UNICODE);
 
         if ($row === false) {
-            // Ny bruker -> opprettes som INAKTIV (må aktiveres av admin i Teknisk)
             $insert = $this->pdo->prepare(
                 'INSERT INTO users (username, display_name, ad_groups, last_login_at, is_active)
-                 VALUES (:u, :n, :g, NOW(), 0)'
+                 VALUES (:u, :n, :g, NOW(), 1)'
             );
             $insert->execute([
                 ':u' => $username,
-                ':n' => $fullName,
+                ':n' => $fullName !== null ? Crypto::encrypt($fullName) : null,
                 ':g' => $groupsJson,
             ]);
 
@@ -58,7 +58,7 @@ class TwoFaStorage
                 'ad_groups'     => $groupsJson,
                 'created_at'    => date('Y-m-d H:i:s'),
                 'last_login_at' => date('Y-m-d H:i:s'),
-                'is_active'     => 0,
+                'is_active'     => 1,
                 'twofa_enabled' => 0,
                 'twofa_secret'  => null,
             ];
@@ -72,7 +72,7 @@ class TwoFaStorage
                  WHERE id = :id'
             );
             $update->execute([
-                ':n'  => $fullName,
+                ':n'  => $fullName !== null ? Crypto::encrypt($fullName) : null,
                 ':g'  => $groupsJson,
                 ':id' => $row['id'],
             ]);
@@ -86,7 +86,7 @@ class TwoFaStorage
 
         return [
             'username'      => $row['username'],
-            'full_name'     => $row['display_name'],
+            'full_name'     => Crypto::decryptOrNull($row['display_name']),
             'ad_groups'     => $adGroups,
             'twofa_enabled' => (bool)($row['twofa_enabled'] ?? 0),
             'twofa_secret'  => $row['twofa_secret'] ?? null,
@@ -108,15 +108,19 @@ class TwoFaStorage
         if ($row === false) {
             $this->pdo->prepare(
                 'INSERT INTO users (username, display_name, email, last_login_at, is_active)
-                 VALUES (:u, :n, :e, NOW(), 0)'
-            )->execute([':u' => $username, ':n' => $displayName, ':e' => $email]);
+                 VALUES (:u, :n, :e, NOW(), 1)'
+            )->execute([
+                ':u' => $username,
+                ':n' => $displayName !== null ? Crypto::encrypt($displayName) : null,
+                ':e' => $email !== null       ? Crypto::encrypt($email)       : null,
+            ]);
 
             $id  = (int)$this->pdo->lastInsertId();
             $row = [
                 'id'            => $id,
                 'username'      => $username,
                 'display_name'  => $displayName,
-                'is_active'     => 0,
+                'is_active'     => 1,
                 'twofa_enabled' => 0,
                 'twofa_secret'  => null,
             ];
@@ -127,7 +131,11 @@ class TwoFaStorage
                      email         = COALESCE(:e, email),
                      last_login_at = NOW()
                  WHERE id = :id'
-            )->execute([':n' => $displayName, ':e' => $email, ':id' => $row['id']]);
+            )->execute([
+                ':n'  => $displayName !== null ? Crypto::encrypt($displayName) : null,
+                ':e'  => $email !== null       ? Crypto::encrypt($email)       : null,
+                ':id' => $row['id'],
+            ]);
 
             $row['display_name'] = $displayName;
         }
@@ -145,7 +153,7 @@ class TwoFaStorage
 
         return [
             'username'      => $row['username'],
-            'full_name'     => $row['display_name'],
+            'full_name'     => Crypto::decryptOrNull($row['display_name']),
             'ad_groups'     => [],
             'twofa_enabled' => (bool)($row['twofa_enabled'] ?? 0),
             'twofa_secret'  => $row['twofa_secret'] ?? null,

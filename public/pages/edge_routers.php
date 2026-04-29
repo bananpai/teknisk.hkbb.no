@@ -313,22 +313,19 @@ if ($editId > 0) {
     </div>
 <?php endif; ?>
 
-<section class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-            <h2 class="h6 mb-0">Eksisterende edge-rutere</h2>
-
-            <!-- Live-søk: filtrerer mens man skriver -->
-            <div class="ms-auto" style="max-width:260px;">
-                <input
-                    type="text"
-                    id="edgeSearch"
-                    class="form-control form-control-sm"
-                    placeholder="Søk i navn, IP, type, grossist..."
-                >
-            </div>
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Eksisterende edge-rutere</span>
+        <div style="max-width:260px;">
+            <input
+                type="text"
+                id="edgeSearch"
+                class="form-control form-control-sm"
+                placeholder="Søk i navn, IP, type, grossist..."
+            >
         </div>
-
+    </div>
+    <div class="card-body p-0">
         <?php if (empty($edges)): ?>
             <p class="text-muted small mb-0">Ingen edge-rutere er registrert ennå.</p>
         <?php else: ?>
@@ -404,9 +401,11 @@ if ($editId > 0) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3">
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Legg til ny edge-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Legg til ny edge-router</h2>
         <p class="small text-muted mb-2">
             Edge-ruteren kobler aksess-laget mot Service Router. Grossist-konfig settes på
             redigeringssiden per edge-router.
@@ -463,9 +462,11 @@ if ($editId > 0) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3" id="edit-edge-router">
+<section class="card mb-3" id="edit-edge-router">
+    <div class="card-header">
+        <span>Rediger edge-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Rediger edge-router</h2>
         <p class="small text-muted mb-2">
             Velg ✏-ikonet i listen over for å laste inn en edge-router her.
             Her kan du også markere hvilke grossister den er konfigurert for.

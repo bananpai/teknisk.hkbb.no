@@ -622,21 +622,18 @@ if ($editCustomer || (($_POST['action'] ?? '') === 'save_nni_customer')) {
     </div>
 <?php endif; ?>
 
-<section class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-            <h2 class="h6 mb-0">NNI-sluttkunder</h2>
-            <div class="d-flex gap-2">
-                <input
-                    type="text"
-                    id="nniSearch"
-                    class="form-control form-control-sm"
-                    style="max-width:260px;"
-                    placeholder="Søk i navn, circuit, grossist..."
-                >
-            </div>
-        </div>
-
+<section class="card mb-3">
+    <div class="card-header">
+        <span>NNI-sluttkunder</span>
+        <input
+            type="text"
+            id="nniSearch"
+            class="form-control form-control-sm"
+            style="max-width:260px;"
+            placeholder="Søk i navn, circuit, grossist..."
+        >
+    </div>
+    <div class="card-body p-0">
         <?php if (empty($nniCustomers)): ?>
             <p class="text-muted small mb-0">Ingen NNI-sluttkunder er registrert ennå.</p>
         <?php else: ?>
@@ -711,9 +708,11 @@ if ($editCustomer || (($_POST['action'] ?? '') === 'save_nni_customer')) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3<?= $showNniForm ? '' : ' d-none' ?>" id="edit-nni">
+<section class="card mb-3<?= $showNniForm ? '' : ' d-none' ?>" id="edit-nni">
+    <div class="card-header">
+        <span>NNI-aksess (flere trinn)</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">NNI-aksess (flere trinn)</h2>
         <p class="small text-muted mb-3">
             Legg til eller rediger NNI-aksess i flere steg. Videre steg er avhengige av informasjonen i steg 1.
         </p>
@@ -1154,9 +1153,11 @@ if ($editCustomer || (($_POST['action'] ?? '') === 'save_nni_customer')) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3" id="edit-l2vpn">
+<section class="card mb-3" id="edit-l2vpn">
+    <div class="card-header">
+        <span>L2VPN-konfig for dette sambandet</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">L2VPN-konfig for dette sambandet</h2>
         <p class="small text-muted mb-2">
             Teknisk L2VPN-konfig mellom SR–ER–AR basert på samme sambandsnummer
             som NNI-kunden (circuit-id).

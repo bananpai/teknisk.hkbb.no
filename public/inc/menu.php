@@ -363,6 +363,65 @@ if (is_string($avatarPath) && $avatarPath !== '') {
     $avatarUrlSafe = preg_replace('/[\x00-\x1F\x7F]/u', '', $avatarPath);
     $avatarUrlSafe = htmlspecialchars($avatarUrlSafe, ENT_QUOTES, 'UTF-8');
 }
+
+// ---------------------------------------------------------
+// Topbar breadcrumb: side -> [seksjon, underseksjon]
+// ---------------------------------------------------------
+$_bcMap = [
+    'minside'                    => [],
+    'events'                     => ['Drift', 'Hendelser & endringer'],
+    'events_new'                 => ['Drift', 'Hendelser & endringer'],
+    'events_view'                => ['Drift', 'Hendelser & endringer'],
+    'events_edit'                => ['Drift', 'Hendelser & endringer'],
+    'events_dashboards'          => ['Drift', 'Hendelser & endringer'],
+    'report_kpi_dashboard'       => ['Rapporter', 'Mål & KPI'],
+    'report_kpi_entry'           => ['Rapporter', 'Mål & KPI'],
+    'report_kpi_admin'           => ['Rapporter', 'Mål & KPI'],
+    'contracts'                  => ['Kontrakter', 'Avtaler & kontrakter'],
+    'contracts_new'              => ['Kontrakter', 'Avtaler & kontrakter'],
+    'contracts_view'             => ['Kontrakter', 'Avtaler & kontrakter'],
+    'contracts_edit'             => ['Kontrakter', 'Avtaler & kontrakter'],
+    'contracts_alerts'           => ['Kontrakter', 'Avtaler & kontrakter'],
+    'contracts_settings'         => ['Kontrakter', 'Avtaler & kontrakter'],
+    'access_routers'             => ['Infrastruktur', 'Nettverk'],
+    'edge_routers'               => ['Infrastruktur', 'Nettverk'],
+    'service_routers'            => ['Infrastruktur', 'Nettverk'],
+    'nni_customers'              => ['Infrastruktur', 'Nettverk'],
+    'customer_l2vpn_circuits'    => ['Infrastruktur', 'Nettverk'],
+    'node_locations'             => ['Infrastruktur', 'Feltobjekter'],
+    'node_location_view'         => ['Infrastruktur', 'Feltobjekter'],
+    'node_location_edit'         => ['Infrastruktur', 'Feltobjekter'],
+    'node_location_templates'    => ['Infrastruktur', 'Feltobjekter'],
+    'node_location_template_edit'=> ['Infrastruktur', 'Feltobjekter'],
+    'bildekart'                  => ['Infrastruktur', 'Feltobjekter'],
+    'image_upload'               => ['Infrastruktur', 'Feltobjekter'],
+    'grossist'                   => ['Infrastruktur', 'Grossistaksess'],
+    'grossist_config'            => ['Infrastruktur', 'Grossistaksess'],
+    'logistikk'                  => ['Lager & logistikk', 'Varelager'],
+    'logistikk_products'         => ['Lager & logistikk', 'Varelager'],
+    'logistikk_categories'       => ['Lager & logistikk', 'Varelager'],
+    'logistikk_movements'        => ['Lager & logistikk', 'Varelager'],
+    'logistikk_receipts'         => ['Lager & logistikk', 'Varelager'],
+    'inv_reports'                => ['Lager & logistikk', 'Varelager'],
+    'inv_out_shop'               => ['Lager & logistikk', 'Varelager'],
+    'logistikk_storage_admin'    => ['Lager & logistikk', 'Varelager'],
+    'projects_admin'             => ['Lager & logistikk', 'Prosjekter & arbeidsordrer'],
+    'crm_accounts'               => ['Lager & logistikk', 'CRM'],
+    'billing_invoice_new'        => ['Lager & logistikk', 'Faktura'],
+    'billing_invoice_edit'       => ['Lager & logistikk', 'Faktura'],
+    'billing_invoice_print'      => ['Lager & logistikk', 'Faktura'],
+    'billing_invoice_list'       => ['Lager & logistikk', 'Faktura'],
+    'billing_invoices'           => ['Lager & logistikk', 'Faktura'],
+    'users'                      => ['System', 'Administrasjon'],
+    'users_edit'                 => ['System', 'Administrasjon'],
+    'lager_users'                => ['System', 'Administrasjon'],
+    'lager_users_edit'           => ['System', 'Administrasjon'],
+    'security'                   => ['System', 'Administrasjon'],
+    'security_ip_filter'         => ['System', 'Administrasjon'],
+    'api_admin'                  => ['System', 'Administrasjon'],
+    'auth_settings'              => ['System', 'Administrasjon'],
+];
+$topbarBreadcrumb = $_bcMap[$currentPage] ?? [];
 ?>
 
 <aside class="app-sidebar" id="appSidebar">
@@ -385,6 +444,17 @@ if (is_string($avatarPath) && $avatarPath !== '') {
            class="nav-item <?= $currentPage === 'start' ? 'active' : '' ?>">
             <i class="bi bi-house nav-icon"></i>
             <span class="nav-label">Oversikt</span>
+        </a>
+
+        <a href="/?page=minside"
+           class="nav-item <?= $currentPage === 'minside' ? 'active' : '' ?>">
+            <i class="bi bi-person-circle nav-icon"></i>
+            <span class="nav-label">Min side</span>
+        </a>
+
+        <a href="/app/nodelokasjon/" class="nav-item" target="_blank">
+            <i class="bi bi-geo-alt nav-icon"></i>
+            <span class="nav-label">Nodelokasjon</span>
         </a>
 
         <?php if ($canIncidents): ?>
@@ -774,16 +844,47 @@ document.addEventListener('DOMContentLoaded', function () {
         document.addEventListener('click', function () { setOpen(false); });
         menu.addEventListener('click', function (e) { e.stopPropagation(); });
     })();
+
+    // Sideovergang: fade-out innhold før navigasjon
+    var content = document.querySelector('.app-content');
+    document.querySelectorAll('a.nav-item, a.nav-sub').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            var href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || link.target === '_blank') return;
+            e.preventDefault();
+            if (content) {
+                content.classList.add('page-leaving');
+                setTimeout(function () { window.location.href = href; }, 140);
+            } else {
+                window.location.href = href;
+            }
+        });
+    });
 });
 </script>
 
 <header class="app-topbar">
-    <h1 class="topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
+    <div class="topbar-page">
+        <?php if (!empty($topbarBreadcrumb)): ?>
+        <div class="topbar-breadcrumb">
+            <?php foreach ($topbarBreadcrumb as $i => $bcPart): ?>
+                <?php if ($i > 0): ?><span class="topbar-bc-sep">›</span><?php endif; ?>
+                <span><?= htmlspecialchars($bcPart, ENT_QUOTES, 'UTF-8') ?></span>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        <h1 class="topbar-title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
+    </div>
 
     <div class="topbar-right">
         <?php if ($isAdmin): ?>
         <span class="topbar-role-chip">Admin</span>
         <?php endif; ?>
+
+        <a href="/app/nodelokasjon/" class="d-md-none topbar-nodelokasjon-btn" title="Nodelokasjon" target="_blank">
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>Nodelokasjon</span>
+        </a>
 
         <a href="/?page=minside" class="topbar-avatar-link" title="Min side">
             <?php if ($avatarUrlSafe !== ''): ?>

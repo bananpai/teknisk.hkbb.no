@@ -71,7 +71,16 @@ if (!function_exists('ldap_escape')) {
    Session helpers
 ------------------------------------------------------------ */
 function nl_is_logged_in(): bool {
-  return !empty($_SESSION['nl_auth_user']);
+  if (!empty($_SESSION['nl_auth_user'])) return true;
+
+  // SSO: aksepter innlogget hovdapp-sesjon (AD eller Entra ID)
+  if (!empty($_SESSION['username']) && ($_SESSION['teknisk'] ?? '') === 'Yes') {
+    $_SESSION['nl_auth_user'] = $_SESSION['username'];
+    $_SESSION['nl_auth_name'] = $_SESSION['fullname'] ?? $_SESSION['username'];
+    return true;
+  }
+
+  return false;
 }
 
 function nl_current_user(): string {

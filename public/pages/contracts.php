@@ -681,12 +681,12 @@ $alertKpi     = $stats['kpi30']     !== null && $stats['kpi30']     > 0;
     </div>
 </div>
 
-<section class="card shadow-sm">
+<section class="card">
+    <div class="card-header">
+        <span>Avtaleoversikt</span>
+    </div>
     <div class="card-body">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <div class="fw-semibold">Avtaleoversikt</div>
-
-            <form class="contracts-filterbar d-flex flex-wrap flex-md-nowrap align-items-center gap-2" method="get" action="/">
+        <form class="contracts-filterbar d-flex flex-wrap flex-md-nowrap align-items-center gap-2 mb-3" method="get" action="/">
                 <input type="hidden" name="page" value="contracts">
 
                 <div class="input-group input-group-sm" style="min-width:220px; max-width:360px;">
@@ -729,8 +729,7 @@ $alertKpi     = $stats['kpi30']     !== null && $stats['kpi30']     > 0;
                 <a class="btn btn-sm btn-outline-secondary" href="/?page=contracts">
                     Nullstill
                 </a>
-            </form>
-        </div>
+        </form>
 
         <?php
         [$hrefTitle,  $actTitle,  $dirTitle]  = contracts_sort_link('title', $sort, $dir);

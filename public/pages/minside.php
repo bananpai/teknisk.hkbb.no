@@ -116,7 +116,7 @@ function normalize_theme(?string $t): string {
     $t = trim(strtolower((string)$t));
     if ($t === '') return 'standard';
 
-    $validThemes = ['standard', 'mork', 'kitty'];
+    $validThemes = ['standard', 'gronn', 'mork', 'kitty'];
     if (in_array($t, $validThemes, true)) return $t;
 
     // Legacy bootswatch → standard som fallback
@@ -135,6 +135,7 @@ function normalize_theme(?string $t): string {
 // Egendefinerte temaer (matcher mapper under /public/assets/themes/)
 $availableThemes = [
     'standard' => 'Standard',
+    'gronn'    => 'Grønn',
     'mork'     => 'Mørk',
     'kitty'    => 'Kitty',
 ];
@@ -505,15 +506,14 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 <div class="row g-3">
     <!-- Sikkerhet -->
     <div class="col-lg-8">
-        <section class="card shadow-sm h-100">
+        <section class="card h-100">
+            <div class="card-header">
+                <span>Sikkerhet</span>
+                <span class="badge <?php echo $twoFaStatusBadge; ?>">
+                    <?php echo htmlspecialchars($twoFaStatusLabel, ENT_QUOTES, 'UTF-8'); ?>
+                </span>
+            </div>
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="h5 mb-0">Sikkerhet</h2>
-                    <span class="badge <?php echo $twoFaStatusBadge; ?>">
-                        <?php echo htmlspecialchars($twoFaStatusLabel, ENT_QUOTES, 'UTF-8'); ?>
-                    </span>
-                </div>
-
                 <?php if ($twoFaResetMessage): ?>
                     <div class="alert alert-info py-1 small mb-3">
                         <?php echo htmlspecialchars($twoFaResetMessage, ENT_QUOTES, 'UTF-8'); ?>
@@ -572,9 +572,11 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 
     <!-- Profilinformasjon -->
     <div class="col-lg-4">
-        <aside class="card shadow-sm h-100">
+        <aside class="card h-100">
+            <div class="card-header">
+                <span>Profilinformasjon</span>
+            </div>
             <div class="card-body">
-                <h2 class="h5 mb-2">Profilinformasjon</h2>
                 <p class="mb-2 small">
                     Navn: <strong><?php echo htmlspecialchars($fullname, ENT_QUOTES, 'UTF-8'); ?></strong><br>
                     Bruker: <code><?php echo htmlspecialchars($username, ENT_QUOTES, 'UTF-8'); ?></code>
@@ -649,9 +651,11 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 </div>
 
 <!-- Utseende / tema / avatar -->
-<section class="card shadow-sm mt-3">
+<section class="card mt-3">
+    <div class="card-header">
+        <span>Utseende</span>
+    </div>
     <div class="card-body">
-        <h2 class="h5 mb-2">Utseende</h2>
         <p class="small text-muted mb-3">
             Her kan du endre tema og profilbilde for Teknisk. Endringene påvirker kun denne løsningen.
         </p>
@@ -713,13 +717,12 @@ $initials = mb_strtoupper(mb_substr($fullname, 0, 1), 'UTF-8');
 </section>
 
 <!-- Mine lenker (privat snarveissamling) -->
-<section class="card shadow-sm mt-3">
+<section class="card mt-3">
+    <div class="card-header">
+        <span>Mine lenker</span>
+        <span class="badge text-bg-secondary-subtle small">Privat</span>
+    </div>
     <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h2 class="h5 mb-0">Mine lenker</h2>
-            <span class="badge text-bg-secondary-subtle small">Privat</span>
-        </div>
-
         <p class="small text-muted mb-3">
             Disse lenkene er kun synlige for deg, og vises på startsiden din.
         </p>

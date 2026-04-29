@@ -5,11 +5,18 @@
 
 /* ── Fargepalett og CSS-variabler ── */
 :root {
-    /* Primærfarge */
+    /* Primærfarge – blå */
     --brand-500:     #2563eb;
     --brand-600:     #1d4ed8;
     --brand-700:     #1e40af;
     --brand-rgb:     37, 99, 235;
+
+    /* Sekundær – gråblå */
+    --secondary-100: #f1f5f9;
+    --secondary-200: #e2e8f0;
+    --secondary-300: #cbd5e1;
+    --secondary-400: #94a3b8;
+    --secondary-500: #64748b;
 
     /* Overflater */
     --surface-0:     #ffffff;
@@ -18,6 +25,7 @@
     --text-primary:  #0f172a;
     --text-muted:    #5c6b82;
     --border:        #dde3ec;
+    --border-light:  #edf0f5;
 
     /* Bootstrap-overrides */
     --bs-primary:           var(--brand-500);
@@ -34,24 +42,60 @@
     --bs-border-radius-sm:  0.25rem;
     --bs-border-radius-lg:  0.5rem;
 
-    /* Sidebar */
-    --ts-sidebar-bg:          #111827;
-    --ts-sidebar-border:      rgba(255, 255, 255, 0.07);
-    --ts-sidebar-text:        rgba(209, 213, 219, 0.85);
-    --ts-sidebar-text-active: #ffffff;
-    --ts-sidebar-hover:       rgba(255, 255, 255, 0.06);
-    --ts-sidebar-active-bg:   rgba(255, 255, 255, 0.10);
+    /* Sidebar – lys beige med mørk brungrå tekst */
+    --ts-sidebar-bg:          #ede8e0;
+    --ts-sidebar-border:      rgba(80, 60, 40, 0.12);
+    --ts-sidebar-text:        #5c5248;
+    --ts-sidebar-text-active: #2c2218;
+    --ts-sidebar-hover:       rgba(80, 60, 40, 0.07);
+    --ts-sidebar-active-bg:   rgba(37, 99, 235, 0.09);
     --ts-sidebar-active-line: #2563eb;
-    --ts-sidebar-section:     rgba(156, 163, 175, 0.45);
+    --ts-sidebar-section:     #9c907f;
 
-    /* Topbar */
-    --ts-topbar-bg:           #ffffff;
-    --ts-topbar-border:       #e5e7eb;
-    --ts-topbar-text:         #111827;
-    --ts-topbar-text-muted:   #6b7280;
+    /* Topbar – følger sidebar */
+    --ts-topbar-bg:           var(--ts-sidebar-bg);
+    --ts-topbar-border:       var(--ts-sidebar-border);
+    --ts-topbar-text:         var(--ts-sidebar-text-active);
+    --ts-topbar-text-muted:   var(--ts-sidebar-text);
 
     /* Content */
     --ts-content-bg:          #f3f4f6;
+}
+
+/* ── Sidebar: lys beige – element-overrides ── */
+.sidebar-brand-name {
+    color: var(--ts-sidebar-text-active);
+}
+
+.sidebar-brand-sub {
+    color: var(--ts-sidebar-section);
+}
+
+.sidebar-brand-icon {
+    background: var(--brand-500);
+}
+
+.user-name {
+    color: var(--ts-sidebar-text-active);
+}
+
+.user-role-label {
+    color: var(--ts-sidebar-section);
+}
+
+.user-avatar-wrap {
+    background: rgba(80, 60, 40, 0.12);
+    border-color: rgba(80, 60, 40, 0.15);
+    color: var(--ts-sidebar-text-active);
+}
+
+.sidebar-user-dropdown a.link-danger {
+    color: #b91c1c;
+}
+
+.sidebar-user-dropdown a.link-danger:hover {
+    background: rgba(185, 28, 28, 0.08);
+    color: #991b1b;
 }
 
 /* ── Typografi ── */
@@ -111,21 +155,16 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 /* ── Kort ── */
 .card {
     --bs-card-border-color: var(--border);
+    --bs-card-box-shadow:   0 1px 4px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);
     --bs-card-cap-bg:       var(--surface-1);
     background-color:       var(--surface-0);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
     border: 1px solid var(--border);
 }
 
 .card-header {
     background-color: var(--surface-1);
     border-bottom: 1px solid var(--border);
-    font-weight: 600;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    padding: 0.65rem 1rem;
+    color: var(--text-primary);
 }
 
 .card-footer {

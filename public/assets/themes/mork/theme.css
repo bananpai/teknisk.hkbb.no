@@ -41,11 +41,11 @@
     --ts-sidebar-active-line: #3b82f6;
     --ts-sidebar-section:     rgba(100, 130, 160, 0.45);
 
-    /* Topbar (mørk) */
-    --ts-topbar-bg:           #0f172a;
-    --ts-topbar-border:       rgba(255, 255, 255, 0.08);
-    --ts-topbar-text:         #e2e8f0;
-    --ts-topbar-text-muted:   #64748b;
+    /* Topbar – følger sidebar */
+    --ts-topbar-bg:           var(--ts-sidebar-bg);
+    --ts-topbar-border:       var(--ts-sidebar-border);
+    --ts-topbar-text:         var(--ts-sidebar-text-active);
+    --ts-topbar-text-muted:   var(--ts-sidebar-text);
 
     /* Content */
     --ts-content-bg:          #0f172a;
@@ -115,12 +115,7 @@
 [data-bs-theme="dark"] .card-header {
     background-color: rgba(255, 255, 255, 0.04);
     border-bottom: 1px solid var(--border);
-    font-weight: 600;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    padding: 0.65rem 1rem;
+    color: var(--text-primary);
 }
 
 [data-bs-theme="dark"] .card-footer {

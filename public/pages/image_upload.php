@@ -122,6 +122,13 @@ if (!function_exists('get_pdo_connection')) {
             if ($pdo instanceof PDO) return $pdo;
         }
 
+        // Load .env before anything else so App\Database::getConnection() has credentials
+        $envPath = dirname(__DIR__, 2) . '/app/Support/Env.php';
+        if (is_file($envPath)) {
+            require_once $envPath;
+            \App\Support\Env::load();
+        }
+
         foreach ([
             dirname(__DIR__, 2) . '/app/database.php',
             dirname(__DIR__, 2) . '/app/Database.php',
@@ -129,17 +136,19 @@ if (!function_exists('get_pdo_connection')) {
         ] as $p) {
             if (is_file($p)) { require_once $p; break; }
         }
-        if (class_exists('App\\Database') && method_exists('App\\Database', 'getConnection')) {
-            $pdo = \App\Database::getConnection();
-            if ($pdo instanceof PDO) return $pdo;
-        }
-        if (class_exists('Database') && method_exists('Database', 'getConnection')) {
-            $pdo = \Database::getConnection();
-            if ($pdo instanceof PDO) return $pdo;
+        try {
+            if (class_exists('App\\Database') && method_exists('App\\Database', 'getConnection')) {
+                $pdo = \App\Database::getConnection();
+                if ($pdo instanceof PDO) return $pdo;
+            }
+            if (class_exists('Database') && method_exists('Database', 'getConnection')) {
+                $pdo = \Database::getConnection();
+                if ($pdo instanceof PDO) return $pdo;
+            }
+        } catch (\Throwable $ignored) {
+            // Fall through to pdo_from_env
         }
 
-        $envPath = dirname(__DIR__, 2) . '/app/Support/Env.php';
-        if (is_file($envPath)) require_once $envPath;
         if (function_exists('pdo_from_env')) {
             $pdo = pdo_from_env();
             if ($pdo instanceof PDO) return $pdo;

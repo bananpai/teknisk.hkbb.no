@@ -432,6 +432,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="submit-row">
                     <button type="submit">Logg inn med AD</button>
                 </div>
+                <div style="text-align:right;margin-top:10px;">
+                    <a href="/login/forgot.php" style="font-size:12px;color:var(--text-muted);text-decoration:none;">
+                        Glemt passord?
+                    </a>
+                </div>
             </form>
 
             <?php if ($entraEnabled): ?>

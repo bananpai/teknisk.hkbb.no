@@ -3,9 +3,11 @@
 
 declare(strict_types=1);
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-require __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\Auth\EntraAuth;
 use App\Auth\TwoFaStorage;
@@ -101,6 +103,7 @@ try {
 // Opprett sesjon
 session_regenerate_id(true);
 
+$_SESSION['twofa_verified'] = true; // Entra ID-brukere trenger ikke 2FA
 $_SESSION['username']       = $username;
 $_SESSION['fullname']       = $displayName;
 $_SESSION['ad_groups']      = [];

@@ -225,21 +225,19 @@ if ($editId > 0) {
     </div>
 <?php endif; ?>
 
-<section class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-            <h2 class="h6 mb-0">Eksisterende aksess-rutere</h2>
-
-            <!-- Live-søk: filtrerer mens man skriver -->
-            <div class="ms-auto" style="max-width:260px;">
-                <input
-                    type="text"
-                    id="accessSearch"
-                    class="form-control form-control-sm"
-                    placeholder="Søk i navn, IP, bundle, uplink, nodetype..."
-                >
-            </div>
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Eksisterende aksess-rutere</span>
+        <div style="max-width:260px;">
+            <input
+                type="text"
+                id="accessSearch"
+                class="form-control form-control-sm"
+                placeholder="Søk i navn, IP, bundle, uplink, nodetype..."
+            >
         </div>
+    </div>
+    <div class="card-body">
 
         <?php if (empty($routers)): ?>
             <p class="text-muted small mb-0">Ingen aksess-rutere er registrert ennå.</p>
@@ -294,9 +292,11 @@ if ($editId > 0) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3">
+<section class="card mb-3">
+    <div class="card-header">
+        <span>Legg til ny aksess-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Legg til ny aksess-router</h2>
         <p class="small text-muted mb-2">
             Disse oppføringene brukes som grunnlag når det genereres konfigurasjon for kundens aksesslag.
         </p>
@@ -378,9 +378,11 @@ if ($editId > 0) {
     </div>
 </section>
 
-<section class="card shadow-sm mb-3" id="edit-access-router">
+<section class="card mb-3" id="edit-access-router">
+    <div class="card-header">
+        <span>Rediger aksess-router</span>
+    </div>
     <div class="card-body">
-        <h2 class="h6 mb-2">Rediger aksess-router</h2>
         <p class="small text-muted mb-2">
             Velg ✏-ikonet i listen over for å laste inn en aksess-router her.
         </p>

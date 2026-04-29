@@ -50,11 +50,11 @@
     --ts-sidebar-active-line: #ffffff;
     --ts-sidebar-section:     rgba(255, 200, 220, 0.55);
 
-    /* Topbar */
-    --ts-topbar-bg:           #ffffff;
-    --ts-topbar-border:       #f8bbd0;
-    --ts-topbar-text:         #3d0026;
-    --ts-topbar-text-muted:   #9e4368;
+    /* Topbar – følger sidebar */
+    --ts-topbar-bg:           var(--ts-sidebar-bg);
+    --ts-topbar-border:       var(--ts-sidebar-border);
+    --ts-topbar-text:         var(--ts-sidebar-text-active);
+    --ts-topbar-text-muted:   var(--ts-sidebar-text);
 
     /* Content */
     --ts-content-bg:          #fff5f9;

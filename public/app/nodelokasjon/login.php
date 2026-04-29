@@ -16,6 +16,18 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 require_once __DIR__ . '/_auth.php';
 
+/* ---------------- Logout ---------------- */
+if (($_GET['logout'] ?? '') === '1') {
+  nl_logout();
+  // SSO-bruker: logg ut av hovdappen også
+  if (!empty($_SESSION['teknisk'])) {
+    header('Location: /?page=logout');
+  } else {
+    header('Location: /app/nodelokasjon/login.php');
+  }
+  exit;
+}
+
 /* ---------------- Polyfill: Env::bool() ----------------
    _auth.php bruker: \App\Support\Env::bool('AD_USE_TLS', false)
    Hvis din Env kun har get(), så gir det fatal error.
@@ -87,7 +99,7 @@ function safe_next(string $fallback = '/nodelokasjon/index.php'): string {
 
 /* ---------------- If already logged in ---------------- */
 if (function_exists('nl_is_logged_in') && nl_is_logged_in()) {
-  header('Location: ' . safe_next('/nodelokasjon/index.php'));
+  header('Location: ' . safe_next('/app/nodelokasjon/index.php'));
   exit;
 }
 
@@ -197,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button class="btn btn-primary w-100" type="submit">Logg inn</button>
 
             <div class="text-center mt-3">
-              <a class="link-secondary small" href="/teknisk.hkbb.no/">Til forsiden</a>
+              <a class="link-secondary small" href="/login/">Logg inn med Teknisk-portalen</a>
             </div>
           </form>
 

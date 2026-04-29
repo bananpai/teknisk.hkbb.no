@@ -240,14 +240,14 @@ function movTypeBadge(string $t): string {
 
     <!-- Snarveier -->
     <div class="col-12">
-        <section class="card shadow-sm">
+        <section class="card">
+            <div class="card-header">
+                <span><i class="bi bi-grid-3x3-gap me-1 opacity-50"></i> Snarveier</span>
+                <a href="/?page=minside" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:11px;">
+                    <i class="bi bi-pencil me-1"></i>Rediger
+                </a>
+            </div>
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h6 mb-0"><i class="bi bi-grid-3x3-gap me-1 opacity-50"></i> Snarveier</h2>
-                    <a href="/?page=minside" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:11px;">
-                        <i class="bi bi-pencil me-1"></i>Rediger
-                    </a>
-                </div>
 
                 <?php if (!empty($userLinks)): ?>
                     <div class="shortcut-grid">
