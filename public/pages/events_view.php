@@ -181,6 +181,9 @@ $JIRA_API_BASE = $JIRA_CLOUD_ID !== ''
     ? 'https://api.atlassian.com/ex/jira/' . $JIRA_CLOUD_ID
     : rtrim($JIRA_SITE, '/');
 
+// Valgfri custom field for "Dato/tidsrom for hendelsen" (customfield_XXXXX)
+$JIRA_FIELD_INCIDENT_DATE = (string)\App\Support\Env::get('JIRA_FIELD_INCIDENT_DATE', '');
+
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
 ------------------------------------------------------------ */
@@ -519,6 +522,44 @@ function jira_http_json(string $method, string $url, array $headers, ?array $pay
   if ($out === false) { $httpCode = 0; return ['_curl_error' => $err ?: 'unknown_error']; }
   $decoded = json_decode($rawOut, true);
   return is_array($decoded) ? $decoded : null;
+}
+
+function jira_event_desc_lines(array $event, string $baseUrl, string $routeKey): array {
+  $kind = ((string)$event['type'] === 'planned') ? 'Endring' : 'Hendelse';
+  $stMap = (string)($event['status'] ?? '');
+  $statusNo = match($stMap) {
+    'scheduled'   => 'Planlagt',
+    'in_progress' => 'Pågående',
+    'resolved'    => 'Utført',
+    'monitoring'  => 'Overvåker',
+    'cancelled'   => 'Avlyst',
+    default       => $stMap,
+  };
+  $lines = [
+    $kind . ' registrert i Teknisk Side (varsling/kommunikasjon). Saksbehandling skjer i Jira.',
+    'Status: ' . $statusNo,
+    'Påvirkning på kunder: ' . (((int)($event['customer_impact'] ?? 0) === 1) ? 'Ja' : 'Nei'),
+    'Antall berørte kunder: ' . (int)($event['affected_customers'] ?? 0),
+  ];
+  if (!empty($event['schedule_start'])) $lines[] = 'Planlagt start: ' . fmt_dt_out((string)$event['schedule_start']);
+  if (!empty($event['schedule_end']))   $lines[] = 'Planlagt slutt: ' . fmt_dt_out((string)$event['schedule_end']);
+  if (!empty($event['actual_start']))   $lines[] = 'Faktisk start: '  . fmt_dt_out((string)$event['actual_start']);
+  if (!empty($event['actual_end']))     $lines[] = 'Faktisk slutt: '  . fmt_dt_out((string)$event['actual_end']);
+  $summary = trim((string)($event['summary_public'] ?? ''));
+  if ($summary !== '') { $lines[] = ''; $lines[] = 'Sammendrag:'; $lines[] = $summary; }
+  if ($baseUrl !== '') {
+    $lines[] = '';
+    $lines[] = 'Lenke til registrering i Teknisk Side:';
+    $lines[] = $baseUrl . '/?' . $routeKey . '=events_view&id=' . (int)$event['id'];
+  }
+  return $lines;
+}
+
+// Konverterer DB-datetime (Y-m-d H:i:s) til Jira ISO 8601 UTC
+function jira_to_datetime(?string $dbDt): ?string {
+  if ($dbDt === null || $dbDt === '') return null;
+  $ts = strtotime($dbDt);
+  return $ts !== false ? date('Y-m-d\TH:i:s.000+0000', $ts) : null;
 }
 
 /* ------------------------------------------------------------
@@ -983,54 +1024,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $err = 'Jira-credentials mangler i config (JIRA_SITE/JIRA_EMAIL/JIRA_API_TOKEN/JIRA_PROJECT_KEY).';
           } else {
 
-            $kind = ((string)$event['type'] === 'planned') ? 'Endring' : 'Hendelse';
-            $stMap = (string)($event['status'] ?? '');
-            $statusNo = $stMap;
-            if ($stMap === 'scheduled') $statusNo = 'Planlagt';
-            else if ($stMap === 'in_progress') $statusNo = 'Pågående';
-            else if ($stMap === 'resolved') $statusNo = 'Utført';
-
-            $impactYesNo = ((int)($event['customer_impact'] ?? 0) === 1) ? 'Ja' : 'Nei';
-            $affected = (int)($event['affected_customers'] ?? 0);
-
-            $linkBack = '';
-            if ($baseUrl !== '') $linkBack = $baseUrl . '/?' . $GLOBALS['routeKey'] . '=events_view&id=' . (int)$event['id'];
-
-            $descLines = [
-              $kind . ' registrert i Teknisk Side (varsling/kommunikasjon). Saksbehandling skjer i Jira.',
-              'Status: ' . $statusNo,
-              'Påvirkning på kunder: ' . $impactYesNo,
-              'Antall berørte kunder: ' . $affected,
-            ];
-
-            if (!empty($event['schedule_start'])) $descLines[] = 'Planlagt start: ' . fmt_dt_out((string)$event['schedule_start']);
-            if (!empty($event['schedule_end']))   $descLines[] = 'Planlagt slutt: ' . fmt_dt_out((string)$event['schedule_end']);
-            if (!empty($event['actual_start']))   $descLines[] = 'Faktisk start: ' . fmt_dt_out((string)$event['actual_start']);
-            if (!empty($event['actual_end']))     $descLines[] = 'Faktisk slutt: ' . fmt_dt_out((string)$event['actual_end']);
-
-            $publicSummary = trim((string)($event['summary_public'] ?? ''));
-            if ($publicSummary !== '') {
-              $descLines[] = '';
-              $descLines[] = 'Sammendrag:';
-              $descLines[] = $publicSummary;
-            }
-
-            if ($linkBack !== '') {
-              $descLines[] = '';
-              $descLines[] = 'Lenke til registrering i Teknisk Side:';
-              $descLines[] = $linkBack;
-            }
-
             $jiraIssueType = ((string)$event['type'] === 'planned') ? $JIRA_ISSUE_TYPE_PLAN : $JIRA_ISSUE_TYPE_INC;
+            $descLines = jira_event_desc_lines($event, $baseUrl, $GLOBALS['routeKey']);
 
             $payload = [
               'fields' => [
-                'project' => ['key' => $JIRA_PROJECT_KEY],
-                'summary' => (string)($event['title_public'] ?? 'Sak fra Teknisk Side'),
+                'project'     => ['key' => $JIRA_PROJECT_KEY],
+                'summary'     => (string)($event['title_public'] ?? 'Sak fra Teknisk Side'),
                 'description' => jira_adf_doc_from_text(implode("\n", $descLines)),
-                'issuetype' => ['name' => $jiraIssueType],
+                'issuetype'   => ['name' => $jiraIssueType],
               ]
             ];
+
+            // Populer "Dato/tidsrom for hendelsen" hvis felt-ID er konfigurert og det er en hendelse
+            if ($JIRA_FIELD_INCIDENT_DATE !== '' && (string)$event['type'] === 'incident') {
+              $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
+              if ($dt !== null) $payload['fields'][$JIRA_FIELD_INCIDENT_DATE] = $dt;
+            }
 
             $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue';
             $http = 0; $raw = '';
@@ -1065,6 +1075,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
               $err = $msg;
             }
+          }
+        }
+      }
+
+      if ($action === 'update_jira' && $canWrite) {
+        $jiraRow = load_jira($pdo, $id);
+        $issueKey = (string)($jiraRow['external_id'] ?? '');
+        if ($issueKey === '') {
+          $err = 'Ingen Jira-sak koblet til denne hendelsen.';
+        } elseif ($JIRA_EMAIL === '' || $JIRA_API_TOKEN === '') {
+          $err = 'Jira-credentials mangler i config.';
+        } else {
+          $descLines = jira_event_desc_lines($event, $baseUrl, $GLOBALS['routeKey']);
+
+          $updateFields = [
+            'summary'     => (string)($event['title_public'] ?? 'Sak fra Teknisk Side'),
+            'description' => jira_adf_doc_from_text(implode("\n", $descLines)),
+          ];
+
+          // Populer "Dato/tidsrom for hendelsen" hvis felt-ID er konfigurert
+          if ($JIRA_FIELD_INCIDENT_DATE !== '' && (string)$event['type'] === 'incident') {
+            $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
+            if ($dt !== null) $updateFields[$JIRA_FIELD_INCIDENT_DATE] = $dt;
+          }
+
+          $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue/' . rawurlencode($issueKey);
+          $http = 0; $raw = '';
+          jira_http_json('PUT', $url, [jira_basic_auth_header($JIRA_EMAIL, $JIRA_API_TOKEN)], ['fields' => $updateFields], $http, $raw);
+
+          if ($http === 204 || ($http >= 200 && $http < 300)) {
+            $pdo->prepare("UPDATE event_integrations SET sync_status='linked', last_error=NULL, updated_at=NOW() WHERE event_id=? AND `system`='jira'")->execute([$id]);
+            $ok = 'Jira-sak ' . $issueKey . ' oppdatert.';
+          } else {
+            $msg = 'Jira oppdateringsfeil (' . $http . ').';
+            if ($raw !== '') $msg .= ' ' . mb_substr($raw, 0, 600);
+            $pdo->prepare("UPDATE event_integrations SET sync_status='error', last_error=?, updated_at=NOW() WHERE event_id=? AND `system`='jira'")->execute([$msg, $id]);
+            $err = $msg;
           }
         }
       }
@@ -1329,11 +1376,17 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
           </div>
           <input type="hidden" name="jira_issuetype_pick" value="<?= esc($jiraPick) ?>">
 
-          <div class="col-12 col-md-6 d-flex align-items-end gap-2">
+          <div class="col-12 col-md-6 d-flex align-items-end gap-2 flex-wrap">
             <?php if ($jiraKey !== ''): ?>
               <a class="btn btn-outline-primary" href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>" target="_blank" rel="noopener">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Åpne i Jira
               </a>
+              <?php if ($canWrite): ?>
+                <button class="btn btn-outline-secondary" type="submit" name="action" value="update_jira"
+                        onclick="return confirm('Synkronisere tittel, beskrivelse og dato til Jira-sak <?= esc($jiraKey) ?>?')">
+                  <i class="bi bi-arrow-repeat me-1"></i>Oppdater i Jira
+                </button>
+              <?php endif; ?>
             <?php elseif ($canWrite): ?>
               <button class="btn btn-success" type="submit" name="action" value="create_jira"
                       onclick="return confirm('Opprette ny sak i Jira?')">
