@@ -175,6 +175,12 @@ $JIRA_PROJECT_KEY       = (string)\App\Support\Env::get('JIRA_PROJECT_KEY',     
 $JIRA_ISSUE_TYPE_INC    = (string)\App\Support\Env::get('JIRA_ISSUE_TYPE_INCIDENT',   'Hendelse');
 $JIRA_ISSUE_TYPE_PLAN   = (string)\App\Support\Env::get('JIRA_ISSUE_TYPE_PLANNED',    'Endringsordre med godkjenning');
 
+// Scoped API-tokens krever api.atlassian.com/ex/jira/{cloudId} – ikke site-URL
+$JIRA_CLOUD_ID = (string)\App\Support\Env::get('JIRA_CLOUD_ID', '');
+$JIRA_API_BASE = $JIRA_CLOUD_ID !== ''
+    ? 'https://api.atlassian.com/ex/jira/' . $JIRA_CLOUD_ID
+    : rtrim($JIRA_SITE, '/');
+
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
 ------------------------------------------------------------ */
@@ -1026,7 +1032,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               ]
             ];
 
-            $url = rtrim($JIRA_SITE, '/') . '/rest/api/3/issue';
+            $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue';
             $http = 0; $raw = '';
             $resp = jira_http_json('POST', $url, [jira_basic_auth_header($JIRA_EMAIL, $JIRA_API_TOKEN)], $payload, $http, $raw);
 

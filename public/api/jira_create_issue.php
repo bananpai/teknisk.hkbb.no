@@ -185,6 +185,12 @@ $jiraApiToken  = (string)env_value('JIRA_API_TOKEN', '');
 $projectKey    = (string)env_value('JIRA_PROJECT_KEY', 'FTD');
 $defaultType   = (string)env_value('JIRA_ISSUE_TYPE', 'Task');
 
+// Scoped API-tokens krever api.atlassian.com/ex/jira/{cloudId} – ikke site-URL
+$jiraCloudId = (string)env_value('JIRA_CLOUD_ID', '');
+$jiraApiBase = $jiraCloudId !== ''
+    ? 'https://api.atlassian.com/ex/jira/' . $jiraCloudId
+    : $jiraBaseUrl;
+
 if ($jiraBaseUrl === '' || $jiraUserEmail === '' || $jiraApiToken === '' || $projectKey === '') {
     respond(500, [
         'ok' => false,
@@ -230,7 +236,7 @@ $payload = [
     ],
 ];
 
-$ch = curl_init($jiraBaseUrl . '/rest/api/3/issue');
+$ch = curl_init($jiraApiBase . '/rest/api/3/issue');
 
 if ($ch === false) {
     respond(500, [
