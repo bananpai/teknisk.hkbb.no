@@ -181,8 +181,8 @@ $JIRA_API_BASE = $JIRA_CLOUD_ID !== ''
     ? 'https://api.atlassian.com/ex/jira/' . $JIRA_CLOUD_ID
     : rtrim($JIRA_SITE, '/');
 
-// Valgfri custom field for "Dato/tidsrom for hendelsen" (customfield_XXXXX)
 $JIRA_FIELD_INCIDENT_DATE = (string)\App\Support\Env::get('JIRA_FIELD_INCIDENT_DATE', '');
+$JIRA_FIELD_INCIDENT_END  = (string)\App\Support\Env::get('JIRA_FIELD_INCIDENT_END',  '');
 
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
@@ -555,11 +555,11 @@ function jira_event_desc_lines(array $event, string $baseUrl, string $routeKey):
   return $lines;
 }
 
-// Konverterer DB-datetime (Y-m-d H:i:s) til Jira ISO 8601 UTC
+// Konverterer DB-datetime (Y-m-d H:i:s) til Jira ISO 8601 med server-tidssone
 function jira_to_datetime(?string $dbDt): ?string {
   if ($dbDt === null || $dbDt === '') return null;
   $ts = strtotime($dbDt);
-  return $ts !== false ? date('Y-m-d\TH:i:s.000+0000', $ts) : null;
+  return $ts !== false ? date('Y-m-d\TH:i:s', $ts) . '.000' . date('O', $ts) : null;
 }
 
 /* ------------------------------------------------------------
@@ -1036,10 +1036,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               ]
             ];
 
-            // Populer "Dato/tidsrom for hendelsen" hvis felt-ID er konfigurert og det er en hendelse
-            if ($JIRA_FIELD_INCIDENT_DATE !== '' && (string)$event['type'] === 'incident') {
-              $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
-              if ($dt !== null) $payload['fields'][$JIRA_FIELD_INCIDENT_DATE] = $dt;
+            if ((string)$event['type'] === 'incident') {
+              if ($JIRA_FIELD_INCIDENT_DATE !== '') {
+                $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
+                if ($dt !== null) $payload['fields'][$JIRA_FIELD_INCIDENT_DATE] = $dt;
+              }
+              if ($JIRA_FIELD_INCIDENT_END !== '') {
+                $dt = jira_to_datetime((string)($event['actual_end'] ?? ''));
+                if ($dt !== null) $payload['fields'][$JIRA_FIELD_INCIDENT_END] = $dt;
+              }
+            }
+
+            // Tilordne til den som opprettet saken
+            $creatorName = (string)($event['created_by'] ?? $username);
+            if ($creatorName !== '') {
+              $stA = $pdo->prepare("SELECT jira_account_id FROM users WHERE username=? LIMIT 1");
+              $stA->execute([$creatorName]);
+              $jiraAccId = $stA->fetchColumn() ?: null;
+              if ($jiraAccId) $payload['fields']['assignee'] = ['accountId' => $jiraAccId];
             }
 
             $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue';
@@ -1094,10 +1108,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => jira_adf_doc_from_text(implode("\n", $descLines)),
           ];
 
-          // Populer "Dato/tidsrom for hendelsen" hvis felt-ID er konfigurert
-          if ($JIRA_FIELD_INCIDENT_DATE !== '' && (string)$event['type'] === 'incident') {
-            $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
-            if ($dt !== null) $updateFields[$JIRA_FIELD_INCIDENT_DATE] = $dt;
+          if ((string)$event['type'] === 'incident') {
+            if ($JIRA_FIELD_INCIDENT_DATE !== '') {
+              $dt = jira_to_datetime((string)($event['actual_start'] ?? ''));
+              if ($dt !== null) $updateFields[$JIRA_FIELD_INCIDENT_DATE] = $dt;
+            }
+            if ($JIRA_FIELD_INCIDENT_END !== '') {
+              $dt = jira_to_datetime((string)($event['actual_end'] ?? ''));
+              if ($dt !== null) $updateFields[$JIRA_FIELD_INCIDENT_END] = $dt;
+            }
+          }
+
+          // Oppdater assignee til saksoppretter
+          $creatorName = (string)($event['created_by'] ?? $username);
+          if ($creatorName !== '') {
+            $stA = $pdo->prepare("SELECT jira_account_id FROM users WHERE username=? LIMIT 1");
+            $stA->execute([$creatorName]);
+            $jiraAccId = $stA->fetchColumn() ?: null;
+            if ($jiraAccId) $updateFields['assignee'] = ['accountId' => $jiraAccId];
           }
 
           $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue/' . rawurlencode($issueKey);
@@ -1111,6 +1139,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'Jira oppdateringsfeil (' . $http . ').';
             if ($raw !== '') $msg .= ' ' . mb_substr($raw, 0, 600);
             $pdo->prepare("UPDATE event_integrations SET sync_status='error', last_error=?, updated_at=NOW() WHERE event_id=? AND `system`='jira'")->execute([$msg, $id]);
+            $err = $msg;
+          }
+        }
+      }
+
+      if ($action === 'add_jira_comment' && $canWrite) {
+        $jiraRow    = load_jira($pdo, $id);
+        $issueKey   = (string)($jiraRow['external_id'] ?? '');
+        $commentTxt = trim((string)($_POST['jira_comment'] ?? ''));
+
+        if ($issueKey === '') {
+          $err = 'Ingen Jira-sak koblet til denne hendelsen.';
+        } elseif ($commentTxt === '') {
+          $err = 'Kommentaren kan ikke være tom.';
+        } elseif ($JIRA_EMAIL === '' || $JIRA_API_TOKEN === '') {
+          $err = 'Jira-credentials mangler i config.';
+        } else {
+          $url = rtrim($JIRA_API_BASE, '/') . '/rest/api/3/issue/' . rawurlencode($issueKey) . '/comment';
+          $http = 0; $raw = '';
+          $resp = jira_http_json('POST', $url, [jira_basic_auth_header($JIRA_EMAIL, $JIRA_API_TOKEN)],
+                                 ['body' => jira_adf_doc_from_text($commentTxt)], $http, $raw);
+
+          if ($http === 201 || ($http >= 200 && $http < 300)) {
+            $ok = 'Kommentar lagt til i ' . $issueKey . '.';
+          } else {
+            $msg = 'Jira kommentarfeil (' . $http . ').';
+            if (is_array($resp) && !empty($resp['errorMessages']))
+              $msg .= ' ' . implode(' | ', array_map('strval', (array)$resp['errorMessages']));
+            elseif ($raw !== '')
+              $msg .= ' ' . mb_substr($raw, 0, 400);
             $err = $msg;
           }
         }
@@ -1447,6 +1505,25 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
     </div>
   </div>
 </form>
+
+<?php if ($jiraKey !== '' && $canWrite): ?>
+<div class="card mb-3">
+  <div class="card-header fw-semibold"><i class="bi bi-chat-left-text me-1"></i>Kommentar til Jira (<?= esc($jiraKey) ?>)</div>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf" value="<?= esc($csrf) ?>">
+      <input type="hidden" name="action" value="add_jira_comment">
+      <div class="mb-2">
+        <textarea class="form-control" name="jira_comment" rows="3"
+                  placeholder="Skriv en kommentar som legges direkte i Jira-saken…"></textarea>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" type="submit">
+        <i class="bi bi-send me-1"></i>Send til Jira
+      </button>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
 
 <div class="card mb-3">
   <div class="card-header d-flex align-items-center justify-content-between">

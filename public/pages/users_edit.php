@@ -272,6 +272,18 @@ if ($userId <= 0) {
 // ---------------------------------------------------------
 $saveMessage = null;
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_jira_account') {
+    $jiraAccountId = trim((string)($_POST['jira_account_id'] ?? ''));
+    $saveMessage = null;
+    try {
+        $pdo->prepare("UPDATE users SET jira_account_id=? WHERE id=?")
+            ->execute([$jiraAccountId !== '' ? $jiraAccountId : null, $userId]);
+        $saveMessage = 'Jira-konto lagret.';
+    } catch (\Throwable $e) {
+        $saveMessage = 'Kunne ikke lagre (DB-feil).';
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_roles') {
     $roles = $_POST['roles'] ?? [];
     if (!is_array($roles)) {
@@ -316,8 +328,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
 // ---------------------------------------------------------
 // Hent brukerinfo
 // ---------------------------------------------------------
+// Legg til jira_account_id-kolonne om den ikke finnes
+try {
+    $pdo->exec("ALTER TABLE users ADD COLUMN jira_account_id VARCHAR(128) NULL");
+} catch (\Throwable $e) {}
+
 $stmt = $pdo->prepare(
-    'SELECT id, username, display_name, email, is_active, last_login_at, twofa_enabled
+    'SELECT id, username, display_name, email, is_active, last_login_at, twofa_enabled, jira_account_id
        FROM users
       WHERE id = :id'
 );
@@ -333,12 +350,13 @@ if (!$user) {
     return;
 }
 
-$usernameRow = $user['username'];
-$displayName = $user['display_name'] ?: $usernameRow;
-$email       = $user['email'] ?: null;
-$isActive    = (bool)$user['is_active'];
-$twofa       = (bool)$user['twofa_enabled'];
-$lastLogin   = $user['last_login_at'];
+$usernameRow   = $user['username'];
+$displayName   = $user['display_name'] ?: $usernameRow;
+$email         = $user['email'] ?: null;
+$isActive      = (bool)$user['is_active'];
+$twofa         = (bool)$user['twofa_enabled'];
+$lastLogin     = $user['last_login_at'];
+$jiraAccountId = (string)($user['jira_account_id'] ?? '');
 
 // ---------------------------------------------------------
 // Hent eksisterende roller for brukeren
@@ -462,5 +480,35 @@ try {
         <p class="small text-muted mt-3 mb-0">
             Disse rollene brukes kun i Teknisk-løsningen, og påvirker ikke rettigheter i AD.
         </p>
+    </div>
+</section>
+
+<section class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h2 class="h5 mb-1">Jira-tilordning</h2>
+        <p class="small text-muted mb-3">
+            Jira Cloud Account ID brukes til å automatisk tilordne saker i Jira når brukeren oppretter en hendelse.
+            Finn din ID på <strong>hkraft.atlassian.net</strong> → Profil → URL inneholder <code>accountId=...</code>,
+            eller spør Jira-admin.
+        </p>
+
+        <?php if (isset($saveMessage) && str_contains($saveMessage, 'Jira')): ?>
+            <div class="alert alert-success py-1 small"><?= h($saveMessage) ?></div>
+        <?php endif; ?>
+
+        <form method="post" style="max-width: 520px;">
+            <input type="hidden" name="action" value="save_jira_account">
+            <div class="mb-3">
+                <label class="form-label small">Jira Account ID</label>
+                <input type="text" class="form-control form-control-sm font-monospace"
+                       name="jira_account_id"
+                       value="<?= h($jiraAccountId) ?>"
+                       placeholder="712020:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <div class="form-text">Format: <code>712020:uuid</code></div>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">
+                <i class="bi bi-check2 me-1"></i>Lagre Jira-konto
+            </button>
+        </form>
     </div>
 </section>
