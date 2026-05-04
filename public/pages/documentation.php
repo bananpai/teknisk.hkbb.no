@@ -115,10 +115,13 @@ pre.doc-code { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-bor
 </p>
 <p>
     Nettverksinfrastrukturen er bygget med full redundans på alle nivåer: redundante kjerneswitcher
-    forhindrer nettverksbrudd ved komponentfeil, redundante brannmurer sikrer kontinuerlig
-    trafikkontroll og tilgangsbegrensning, og redundant internettilkobling fra uavhengige
-    leverandører eliminerer risikoen for tap av ekstern tilgang som enkel feilkilde.
-    Samlet utgjør dette et robust og feiltolerант driftsmiljø med høy oppetid og begrenset
+    forhindrer nettverksbrudd ved komponentfeil, og redundante brannmurer sikrer kontinuerlig
+    trafikkontroll og tilgangsbegrensning. Internettilkoblingen er løst med to uavhengige
+    fiberaksesser der hver aksess går fra sin dedikerte Edge-ruter til sin dedikerte Cisco 920-ruter,
+    slik at ingen enkelt komponent i aksessveien er felles feilkilde.
+    Alle fysiske komponenter har doble strømforsyninger (PSU) med tilkobling til både UPS og
+    aggregat, noe som sikrer kontinuerlig drift ved strømbrudd i kortere og lengre perioder.
+    Samlet utgjør dette et robust og feiltolerант driftsmiljø med høy oppetid og minimal
     eksponering mot enkeltpunktsfeil.
 </p>
 <div class="doc-callout doc-callout-info">
