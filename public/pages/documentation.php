@@ -94,8 +94,8 @@ pre.doc-code { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-bor
 <section id="oversikt" class="doc-section mb-5">
 <h4 class="border-bottom pb-2">1. Systemoversikt</h4>
 <p>
-    <strong>Teknisk</strong> er et internt drifts- og administrasjonssystem for teknisk avdeling i
-    Hardanger og Kvam Breiband (HKBB). Systemet samler funksjoner for hendelseshåndtering,
+    <strong>Teknisk</strong> er et internt drifts- og administrasjonssystem for teknisk avdeling.
+    Systemet samler funksjoner for hendelseshåndtering,
     nettverksdokumentasjon, kontraktsforvaltning, lager, KPI-rapportering og fakturering i én
     felles plattform tilgjengelig via nettleser på internt nett.
 </p>
@@ -104,9 +104,26 @@ pre.doc-code { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-bor
     definerte API-endepunkter med scoped tokens. All tilgang krever gyldig
     bedriftsinnlogging og 2FA.
 </p>
+
+<h6 class="mt-3">Driftsmiljø</h6>
+<p>
+    Systemet kjører på Haugaland Kraft Fibers egne VM-servere i selskapets egen infrastruktur.
+    Plattformen er satt opp med VMware i en HA-konfigurasjon (High Availability), som sikrer
+    automatisk failover ved svikt i enkeltservere uten manuell intervensjon. Lagring er løst med
+    dedikert SAN (Storage Area Network), som gir høy I/O-ytelse, sentral administrasjon og
+    mulighet for øyeblikksbilder og raske gjenopprettinger.
+</p>
+<p>
+    Nettverksinfrastrukturen er bygget med full redundans på alle nivåer: redundante kjerneswitcher
+    forhindrer nettverksbrudd ved komponentfeil, redundante brannmurer sikrer kontinuerlig
+    trafikkontroll og tilgangsbegrensning, og redundant internettilkobling fra uavhengige
+    leverandører eliminerer risikoen for tap av ekstern tilgang som enkel feilkilde.
+    Samlet utgjør dette et robust og feiltolerант driftsmiljø med høy oppetid og begrenset
+    eksponering mot enkeltpunktsfeil.
+</p>
 <div class="doc-callout doc-callout-info">
     Systemet håndterer operasjonell informasjon (nettinfrastruktur, kundeavtaler, personaldata)
-    og skal behandles i henhold til HKBB sine interne retningslinjer for informasjonssikkerhet.
+    og skal behandles i henhold til interne retningslinjer for informasjonssikkerhet.
 </div>
 </section>
 
