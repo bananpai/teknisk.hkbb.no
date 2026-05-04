@@ -124,6 +124,11 @@ pre.doc-code { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-bor
     Samlet utgjør dette et robust og feiltolerант driftsmiljø med høy oppetid og minimal
     eksponering mot enkeltpunktsfeil.
 </p>
+<p>
+    Det kjøres daglig sikkerhetskopiering med Veeam Backup &amp; Replication til ekstern lokasjon.
+    Dette sikrer at data kan gjenopprettes ved alvorlige hendelser som hardware-svikt,
+    korrupsjon eller utilsiktet sletting, uavhengig av tilstanden til primærinfrastrukturen.
+</p>
 <div class="doc-callout doc-callout-info">
     Systemet håndterer operasjonell informasjon (nettinfrastruktur, kundeavtaler, personaldata)
     og skal behandles i henhold til interne retningslinjer for informasjonssikkerhet.
