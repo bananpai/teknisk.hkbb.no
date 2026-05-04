@@ -245,7 +245,7 @@ $apiCatalog = [
                 ],
             ],
         ],
-        'response_note' => 'address_lookup-svar: { "mode": "address_lookup", "address": { "street", "house_number", "postal_code" }, "affected": true/false, "count": 1, "events": [ { "id", "type", "status", "severity", "title_public", "summary_public", "customer_actions", "schedule_start", "schedule_end", "actual_start", "actual_end", "next_update_eta", "affected_customers", "updated_at" } ] }',
+        'response_note' => 'address_lookup-svar: { "mode": "address_lookup", "address": { "street", "house_number", "postal_code" }, "affected": true/false, "count": 1, "events": [ { "id", "type", "status", "severity", "title_public", "customer_actions", "hkon_message", "schedule_start", "schedule_end", "actual_start", "actual_end", "next_update_eta", "updated_at" } ] }',
         'status_values' => 'scheduled | in_progress | monitoring',
         'type_values'   => 'incident | planned',
         'severity_values' => 'none | minor | moderate | major | critical',

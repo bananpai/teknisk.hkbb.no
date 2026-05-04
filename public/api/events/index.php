@@ -148,9 +148,9 @@ if ($mode === 'address_lookup') {
   $sql = "
     SELECT DISTINCT
       e.id, e.type, e.status, e.severity,
-      e.title_public, e.summary_public, e.customer_actions, e.hkon_message,
+      e.title_public, e.customer_actions, e.hkon_message,
       e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
-      e.next_update_eta, e.affected_customers,
+      e.next_update_eta,
       e.updated_at
     FROM events e
     JOIN event_affected_addresses aa ON aa.event_id = e.id
@@ -241,20 +241,35 @@ if ($isPublicFeed) {
 
 $sqlWhere = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
-$sql = "
-SELECT
-  e.id, e.type, e.status, e.severity, e.impact, e.services,
-  e.title_public, e.summary_public, e.customer_actions, e.hkon_message,
-  e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
-  e.next_update_eta,
-  e.published_to_dashboard, e.published_to_chatbot, e.is_public,
-  e.updated_at,
-  (SELECT i.external_id FROM event_integrations i WHERE i.event_id=e.id AND i.system='jira' LIMIT 1) AS jira_key
-FROM events e
-$sqlWhere
-ORDER BY COALESCE(e.schedule_start, e.actual_start, e.updated_at) DESC, e.id DESC
-LIMIT $limit
-";
+if ($isPublicFeed) {
+  $sql = "
+  SELECT
+    e.id, e.type, e.status, e.severity,
+    e.title_public, e.customer_actions, e.hkon_message,
+    e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
+    e.next_update_eta,
+    e.updated_at
+  FROM events e
+  $sqlWhere
+  ORDER BY COALESCE(e.schedule_start, e.actual_start, e.updated_at) DESC, e.id DESC
+  LIMIT $limit
+  ";
+} else {
+  $sql = "
+  SELECT
+    e.id, e.type, e.status, e.severity, e.impact, e.services,
+    e.title_public, e.summary_public, e.customer_actions, e.hkon_message,
+    e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
+    e.next_update_eta, e.affected_customers,
+    e.published_to_dashboard, e.published_to_chatbot, e.is_public,
+    e.updated_at,
+    (SELECT i.external_id FROM event_integrations i WHERE i.event_id=e.id AND i.system='jira' LIMIT 1) AS jira_key
+  FROM events e
+  $sqlWhere
+  ORDER BY COALESCE(e.schedule_start, e.actual_start, e.updated_at) DESC, e.id DESC
+  LIMIT $limit
+  ";
+}
 
 $st = $pdo->prepare($sql);
 $st->execute($args);
