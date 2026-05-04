@@ -592,6 +592,9 @@ $allowedPages = [
     'auth_settings',
     'audit_log',
 
+    // ✅ Dokumentasjon
+    'documentation',
+
     // ✅ Avtaler & kontrakter
     'contracts',
     'contracts_new',
@@ -709,6 +712,10 @@ switch ($page) {
 
     case 'audit_log':
         $pageTitle = 'Teknisk – Audit-logg';
+        break;
+
+    case 'documentation':
+        $pageTitle = 'Teknisk – Dokumentasjon';
         break;
 
     // ✅ Avtaler & kontrakter

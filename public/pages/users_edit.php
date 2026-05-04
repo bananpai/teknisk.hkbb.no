@@ -225,6 +225,9 @@ $availableRoles = [
     // ✅ KPI / Mål (ny modul)
     'report_admin'    => 'KPI/Mål (admin)',
     'report_user'     => 'KPI/Mål (rapportør)',
+
+    // ✅ Dokumentasjon
+    'dokumentasjon'   => 'Dokumentasjon',
 ];
 
 $roleHelp = [
@@ -257,6 +260,9 @@ $roleHelp = [
     // ✅ KPI / Mål (ny modul)
     'report_admin'    => 'Administrere KPI-er, avdelinger og delegere ansvar (tilgang til KPI/Mål admin-siden).',
     'report_user'     => 'Fylle inn månedlige KPI-tall som er delegert til brukeren + se KPI/Mål dashboard.',
+
+    // ✅ Dokumentasjon
+    'dokumentasjon'   => 'Tilgang til systemdokumentasjonen.',
 ];
 
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;

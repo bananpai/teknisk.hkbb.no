@@ -185,6 +185,11 @@ $canContracts = $isAdmin
         'agreements_read','agreements_write','agreements_admin'
     ], $perms);
 
+// ✅ Dokumentasjon
+$canDokumentation = $isAdmin
+    || has_any(['dokumentasjon', 'documentation'], $roles)
+    || has_any(['dokumentasjon', 'documentation'], $perms);
+
 // ✅ KPI/Mål – egen modul
 $canKpi = $isAdmin
     || has_any(['report_admin','report_user','kpi','mål','maal','kpi_user','kpi_admin'], $roles)
@@ -777,6 +782,15 @@ $topbarBreadcrumb = $_bcMap[$currentPage] ?? [];
                 <span class="nav-label">Audit-logg</span>
             </a>
         </div>
+        <?php endif; ?>
+
+        <?php if ($canDokumentation): ?>
+        <div class="nav-section-label">Dokumentasjon</div>
+        <a href="/?page=documentation"
+           class="nav-item <?= $currentPage === 'documentation' ? 'active' : '' ?>">
+            <i class="bi bi-book nav-icon"></i>
+            <span class="nav-label">Dokumentasjon</span>
+        </a>
         <?php endif; ?>
 
     </nav>
