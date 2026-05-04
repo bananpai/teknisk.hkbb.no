@@ -93,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_SESSION['2fa_enabled']    = false;
         $_SESSION['2fa_configured'] = $twoFaEnabled && !empty($twoFaSecret);
+        $_SESSION['twofa_verified'] = false;
 
         header('Location: /?page=start');
         exit;
