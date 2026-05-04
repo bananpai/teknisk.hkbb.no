@@ -135,12 +135,37 @@ if (!function_exists('api_admin_is_admin_fallback')) {
     }
 }
 
-/**
- * Hardkodet base-url for docs, siden du oppga korrekt host.
- */
 if (!function_exists('api_admin_base_url')) {
     function api_admin_base_url(): string {
         return 'https://teknisk.hkbb.no';
+    }
+}
+
+/**
+ * Konverterer et curl-kall til tilsvarende PowerShell Invoke-RestMethod.
+ * Håndterer -H headers og URL som siste argument.
+ * Eksempel:
+ *   curl -H "Authorization: Bearer abc" "https://example.com/api"
+ *   → Invoke-RestMethod -Uri "https://example.com/api" -Headers @{ Authorization = "Bearer abc" }
+ */
+if (!function_exists('api_admin_curl_to_ps')) {
+    function api_admin_curl_to_ps(string $curl): string {
+        preg_match_all('/-H\s+"([^"]+)"/', $curl, $hm);
+        $headers = [];
+        foreach ($hm[1] as $h) {
+            $pos = strpos($h, ': ');
+            if ($pos !== false) {
+                $k = substr($h, 0, $pos);
+                $v = substr($h, $pos + 2);
+                // Keys with hyphens need quoting in PS hashtable
+                $kSafe = strpos($k, '-') !== false ? '"' . $k . '"' : $k;
+                $headers[] = $kSafe . ' = "' . $v . '"';
+            }
+        }
+        preg_match('/"(https?:\/\/[^"]+)"\s*$/', $curl, $um);
+        $url  = $um[1] ?? '';
+        $hStr = $headers ? ' -Headers @{ ' . implode('; ', $headers) . ' }' : '';
+        return 'Invoke-RestMethod -Uri "' . $url . '"' . $hStr;
     }
 }
 
@@ -179,9 +204,56 @@ $baseUrl = api_admin_base_url();
 
 $apiCatalog = [
     [
-        'title'       => 'Hendelser & Endringer',
+        'title'       => 'HKON – Chatbot-integrasjon',
+        'key'         => 'hkon',
+        'badge'       => 'HKON',
+        'description' => 'Smal scope for HKON-chatboten. Kun offentlig-klarerte data — ingen interne felter, ingen Jira-nøkler, ingen dashboard-flagg. Bruk scope <code>hkon:events</code> for dette tokenet.',
+        'auth' => [
+            'Bearer' => 'Authorization: Bearer <token>',
+        ],
+        'endpoints' => [
+            [
+                'method' => 'GET',
+                'path'   => '/api/events/public',
+                'scope'  => 'hkon:events',
+                'scope_alt' => 'events:read',
+                'desc'   => 'Returnerer aktive saker der "HKON (chatbot)"-distribusjon er aktivert (published_to_chatbot=1). Kun kundeklare felter: tittel, sammendrag, kundehandlinger, tidsinfo, alvorlighetsgrad.',
+                'params' => [
+                    ['name' => 'target_type',  'desc' => 'Valgfri – filtrer på målgruppe-type (f.eks. leveransepunkt_id)'],
+                    ['name' => 'target_value', 'desc' => 'Valgfri – verdi for target_type-filter'],
+                ],
+                'examples' => [
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public"',
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public?target_type=leveransepunkt_id&target_value=12345"',
+                ],
+            ],
+            [
+                'method' => 'GET',
+                'path'   => '/api/events?mode=address_lookup',
+                'scope'  => 'hkon:events',
+                'scope_alt' => 'events:read',
+                'desc'   => 'Sjekker om en gitt adresse er berørt av aktive hendelser/endringer. Returnerer kun saker der HKON-distribusjon er aktivert. Minst postal_code påkrevd.',
+                'params' => [
+                    ['name' => 'postal_code',  'desc' => 'Postnummer (PÅKREVD)'],
+                    ['name' => 'street',       'desc' => 'Gatenavn, valgfri (case-insensitiv match)'],
+                    ['name' => 'house_number', 'desc' => 'Husnummer, valgfri'],
+                    ['name' => 'house_letter', 'desc' => 'Husbokstav, valgfri (case-insensitiv match)'],
+                ],
+                'examples' => [
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=address_lookup&postal_code=3600&street=Storgata&house_number=5"',
+                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=address_lookup&postal_code=3600"',
+                ],
+            ],
+        ],
+        'response_note' => 'address_lookup-svar: { "mode": "address_lookup", "address": { "street", "house_number", "postal_code" }, "affected": true/false, "count": 1, "events": [ { "id", "type", "status", "severity", "title_public", "summary_public", "customer_actions", "schedule_start", "schedule_end", "actual_start", "actual_end", "next_update_eta", "affected_customers", "updated_at" } ] }',
+        'status_values' => 'scheduled | in_progress | monitoring',
+        'type_values'   => 'incident | planned',
+        'severity_values' => 'none | minor | moderate | major | critical',
+    ],
+    [
+        'title'       => 'Hendelser & Endringer – intern',
         'key'         => 'events',
-        'description' => 'Les aktive og planlagte hendelser/endringer. Brukes av Hkon (chatbot), Dashboard og andre integrasjoner. Scope: events:read.',
+        'description' => 'Full tilgang til hendelse-data. Beregnet på interne verktøy: dashboards, Grafana, admin-integrasjoner. Eksponerer interne felter (Jira-nøkkel, dashboard-flagg). Bruk scope <code>events:read</code>.',
         'auth' => [
             'Bearer' => 'Authorization: Bearer <token>',
         ],
@@ -190,7 +262,7 @@ $apiCatalog = [
                 'method' => 'GET',
                 'path'   => '/api/events',
                 'scope'  => 'events:read',
-                'desc'   => 'List hendelser. Bruk ?mode= for å filtrere.',
+                'desc'   => 'List hendelser. Inkluderer interne felter (jira_key, published_to_dashboard, published_to_chatbot osv.).',
                 'params' => [
                     ['name' => 'mode',  'desc' => 'active (default) | planned | recent (siste 7 dager) | all'],
                     ['name' => 'limit', 'desc' => 'Maks antall (1–200, default 50)'],
@@ -213,38 +285,7 @@ $apiCatalog = [
                     'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?id=123"',
                 ],
             ],
-            [
-                'method' => 'GET',
-                'path'   => '/api/events/public',
-                'scope'  => 'events:read',
-                'desc'   => 'Hkon-feed: returnerer kun aktive saker der distribusjon "Hkon (chatbot)" er aktivert (published_to_chatbot=1). Kun kundeklare felter returneres.',
-                'params' => [
-                    ['name' => 'target_type',  'desc' => 'Valgfri filtrering på målgruppe-type (f.eks. leveransepunkt_id)'],
-                    ['name' => 'target_value', 'desc' => 'Verdi for target_type-filter'],
-                ],
-                'examples' => [
-                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public"',
-                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events/public?target_type=leveransepunkt_id&target_value=12345"',
-                ],
-            ],
-            [
-                'method' => 'GET',
-                'path'   => '/api/events?mode=address_lookup',
-                'scope'  => 'events:read',
-                'desc'   => 'Adresse-oppslag for Hkon: sjekker om en gitt adresse er berørt av aktive hendelser/endringer. Slår opp i event_affected_addresses. Returnerer kun saker der distribusjon "Hkon (chatbot)" er aktivert. Minst postal_code må oppgis.',
-                'params' => [
-                    ['name' => 'postal_code',  'desc' => 'Postnummer (PÅKREVD)'],
-                    ['name' => 'street',       'desc' => 'Gatenavn, valgfri (case-insensitiv match)'],
-                    ['name' => 'house_number', 'desc' => 'Husnummer, valgfri'],
-                    ['name' => 'house_letter', 'desc' => 'Husbokstav, valgfri (case-insensitiv match)'],
-                ],
-                'examples' => [
-                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=address_lookup&postal_code=3600&street=Storgata&house_number=5"',
-                    'curl -H "Authorization: Bearer <token>" "' . $baseUrl . '/api/events?mode=address_lookup&postal_code=3600"',
-                ],
-            ],
         ],
-        'response_note' => 'Adresse-oppslag returformat: { "mode": "address_lookup", "address": { "street", "house_number", "postal_code" }, "affected": true/false, "count": 1, "events": [ { "id", "type", "status", "severity", "title_public", "summary_public", "customer_actions", "schedule_start", "schedule_end", "actual_start", "actual_end", "next_update_eta", "affected_customers", "updated_at" } ] }. Liste-format: { "mode": "active", "count": 2, "items": [ {...} ] }',
         'status_values' => 'draft | scheduled | in_progress | monitoring | resolved | cancelled',
         'type_values'   => 'incident | planned',
         'severity_values' => 'none | minor | moderate | major | critical',
@@ -292,12 +333,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = trim((string)($_POST['name'] ?? ''));
         $scopeFieldObjects = isset($_POST['scope_field_objects_read']);
         $scopeEventsRead   = isset($_POST['scope_events_read']);
+        $scopeHkonEvents   = isset($_POST['scope_hkon_events']);
 
         if ($name === '') $name = 'API Token';
 
         $scopes = [];
         if ($scopeFieldObjects) $scopes[] = 'field_objects:read';
         if ($scopeEventsRead)   $scopes[] = 'events:read';
+        if ($scopeHkonEvents)   $scopes[] = 'hkon:events';
         if (!$scopes) $scopes[] = 'field_objects:read';
 
         $token = api_admin_generate_token();
@@ -383,15 +426,48 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
 
             <div class="col-md-6">
                 <label class="form-label">Scopes</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="s1" name="scope_field_objects_read" checked>
-                    <label class="form-check-label" for="s1">field_objects:read</label>
+
+                <div class="table-responsive mb-2">
+                    <table class="table table-sm table-bordered mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:30px;"></th>
+                                <th>Scope</th>
+                                <th>Tilgang</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input" type="checkbox" id="s1" name="scope_field_objects_read" checked>
+                                </td>
+                                <td class="align-middle"><label for="s1" class="mb-0"><code>field_objects:read</code></label></td>
+                                <td class="text-muted align-middle">Les feltobjekter. Brukes av NetBox, Grafana og kart-integrasjoner.</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input" type="checkbox" id="s2" name="scope_events_read">
+                                </td>
+                                <td class="align-middle"><label for="s2" class="mb-0"><code>events:read</code></label></td>
+                                <td class="text-muted align-middle">Full tilgang til alle hendelse-endepunkter. Intern bruk – dashboards, Grafana, admin-verktøy.</td>
+                            </tr>
+                            <tr>
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input" type="checkbox" id="s3" name="scope_hkon_events">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="s3" class="mb-0"><code>hkon:events</code></label>
+                                    <span class="badge bg-primary ms-1" style="font-size:.65rem;">HKON</span>
+                                </td>
+                                <td class="text-muted align-middle">Smal scope kun for HKON-chatboten. Gir tilgang til <code>/api/events/public</code> og <code>address_lookup</code> – ingen intern data.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="s2" name="scope_events_read">
-                    <label class="form-check-label" for="s2">events:read</label>
+
+                <div class="alert alert-info py-2 px-3 small mb-0">
+                    <strong>HKON-token:</strong> velg kun <code>hkon:events</code>. Gir chatboten minst mulig tilgang — kun offentlige hendelser og adresseoppslag.
                 </div>
-                <div class="form-text">Start med read-only. Flere scopes kan legges til senere.</div>
             </div>
 
             <div class="col-12">
@@ -496,6 +572,20 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
 
     <?php if ($docsOpen): ?>
         <div class="card-body">
+
+            <div class="alert alert-warning py-2 px-3 mb-3 small">
+                <strong>Windows PowerShell:</strong> <code>curl</code> i PowerShell er et alias for <code>Invoke-WebRequest</code> og godtar ikke <code>-H</code>-flagget.
+                Bruk enten <code>curl.exe</code> (ekte curl, inkludert i Windows 10/Server 2019+) eller <strong>PowerShell</strong>-eksemplene under.
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="small text-muted me-1">Vis eksempler som:</span>
+                <div class="btn-group btn-group-sm" role="group" id="exampleSyntaxToggle">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="setExSyntax('curl')">curl / bash</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setExSyntax('ps')">PowerShell</button>
+                </div>
+            </div>
+
             <div class="accordion" id="apiDocsAccordion">
                 <?php foreach ($apiCatalog as $idx => $api): ?>
                     <?php
@@ -511,13 +601,16 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
                                     aria-expanded="<?= $idx === 0 ? 'true' : 'false' ?>"
                                     aria-controls="<?= h($collapseId) ?>">
                                 <?= h((string)$api['title']) ?>
+                                <?php if (!empty($api['badge'])): ?>
+                                    <span class="badge bg-primary ms-2" style="font-size:.65rem;"><?= h((string)$api['badge']) ?></span>
+                                <?php endif; ?>
                             </button>
                         </h2>
                         <div id="<?= h($collapseId) ?>" class="accordion-collapse collapse <?= $idx === 0 ? 'show' : '' ?>"
                              aria-labelledby="<?= h($headingId) ?>" data-bs-parent="#apiDocsAccordion">
                             <div class="accordion-body">
 
-                                <div class="mb-2"><?= h((string)($api['description'] ?? '')) ?></div>
+                                <div class="mb-3 small"><?= (string)($api['description'] ?? '') ?></div>
 
                                 <div class="mb-3">
                                     <div class="fw-semibold mb-1">Base URL</div>
@@ -543,10 +636,11 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
 
                                 <?php foreach (($api['endpoints'] ?? []) as $eIdx => $ep): ?>
                                     <?php
-                                    $method = (string)($ep['method'] ?? 'GET');
-                                    $path   = (string)($ep['path'] ?? '/');
-                                    $scope  = (string)($ep['scope'] ?? '');
-                                    $params = (array)($ep['params'] ?? []);
+                                    $method   = (string)($ep['method'] ?? 'GET');
+                                    $path     = (string)($ep['path'] ?? '/');
+                                    $scope    = (string)($ep['scope'] ?? '');
+                                    $scopeAlt = (string)($ep['scope_alt'] ?? '');
+                                    $params   = (array)($ep['params'] ?? []);
                                     $examples = (array)($ep['examples'] ?? []);
                                     ?>
                                     <div class="border rounded p-3 mb-3">
@@ -556,9 +650,18 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
                                                 <code class="ms-2"><?= h($path) ?></code>
                                             </div>
                                             <?php if ($scope !== ''): ?>
-                                                <div class="text-muted small">Scope: <code><?= h($scope) ?></code></div>
+                                                <div class="text-muted small">
+                                                    Scope: <code><?= h($scope) ?></code>
+                                                    <?php if ($scopeAlt !== ''): ?>
+                                                        <span class="text-muted"> eller </span><code><?= h($scopeAlt) ?></code>
+                                                    <?php endif; ?>
+                                                </div>
                                             <?php endif; ?>
                                         </div>
+
+                                        <?php if (!empty($ep['desc'])): ?>
+                                            <div class="mt-2 small text-muted"><?= h((string)$ep['desc']) ?></div>
+                                        <?php endif; ?>
 
                                         <?php if ($params): ?>
                                             <div class="mt-2 small">
@@ -573,12 +676,23 @@ $docsOpen = ((string)($_GET['docs'] ?? '') === '1');
 
                                         <?php if ($examples): ?>
                                             <div class="mt-3">
-                                                <div class="fw-semibold small mb-1">Eksempler (curl)</div>
+                                                <div class="fw-semibold small mb-1 api-ex-label-curl">Eksempler (curl / bash)</div>
+                                                <div class="fw-semibold small mb-1 api-ex-label-ps" style="display:none;">Eksempler (PowerShell)</div>
                                                 <?php foreach ($examples as $exIdx => $ex): ?>
-                                                    <?php $id = 'ex_' . $idx . '_' . $eIdx . '_' . $exIdx; ?>
-                                                    <div class="d-flex gap-2 flex-wrap align-items-center mb-1">
-                                                        <code id="<?= h($id) ?>" style="word-break:break-all;"><?= h((string)$ex) ?></code>
-                                                        <button type="button" class="btn btn-sm btn-outline-dark" onclick="copyText('<?= h($id) ?>')">
+                                                    <?php
+                                                    $idCurl = 'ex_' . $idx . '_' . $eIdx . '_' . $exIdx . '_curl';
+                                                    $idPs   = 'ex_' . $idx . '_' . $eIdx . '_' . $exIdx . '_ps';
+                                                    $psEx   = api_admin_curl_to_ps((string)$ex);
+                                                    ?>
+                                                    <div class="api-ex-curl d-flex gap-2 flex-wrap align-items-center mb-1">
+                                                        <code id="<?= h($idCurl) ?>" style="word-break:break-all;"><?= h((string)$ex) ?></code>
+                                                        <button type="button" class="btn btn-sm btn-outline-dark" onclick="copyText('<?= h($idCurl) ?>')">
+                                                            <i class="bi bi-clipboard me-1"></i> Kopier
+                                                        </button>
+                                                    </div>
+                                                    <div class="api-ex-ps d-flex gap-2 flex-wrap align-items-center mb-1" style="display:none;">
+                                                        <code id="<?= h($idPs) ?>" style="word-break:break-all;"><?= h($psEx) ?></code>
+                                                        <button type="button" class="btn btn-sm btn-outline-dark" onclick="copyText('<?= h($idPs) ?>')">
                                                             <i class="bi bi-clipboard me-1"></i> Kopier
                                                         </button>
                                                     </div>
@@ -620,6 +734,28 @@ function copyText(elementId) {
         toastCopied();
     });
 }
+
+function setExSyntax(mode) {
+    const isCurl = mode === 'curl';
+    document.querySelectorAll('.api-ex-curl').forEach(el => el.style.display = isCurl ? '' : 'none');
+    document.querySelectorAll('.api-ex-ps').forEach(el => el.style.display = isCurl ? 'none' : '');
+    document.querySelectorAll('.api-ex-label-curl').forEach(el => el.style.display = isCurl ? '' : 'none');
+    document.querySelectorAll('.api-ex-label-ps').forEach(el => el.style.display = isCurl ? 'none' : '');
+
+    const toggle = document.getElementById('exampleSyntaxToggle');
+    if (toggle) {
+        toggle.querySelectorAll('button').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.trim().toLowerCase().startsWith(mode));
+        });
+    }
+    localStorage.setItem('api_ex_syntax', mode);
+}
+
+// Restore last choice on page load
+(function() {
+    const saved = localStorage.getItem('api_ex_syntax');
+    if (saved === 'ps') setExSyntax('ps');
+})();
 
 function toastCopied() {
     let t = document.getElementById('copyToast');

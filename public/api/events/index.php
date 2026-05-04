@@ -3,8 +3,9 @@
 // Public API for Hendelser & Planlagte jobber
 // Auth: Bearer token via api_tokens (tabell finnes i DB)
 // Scopes:
-//  - events:read  (les/list)
-//  - events:write (ikke implementert i denne API-filen nå)
+//  - events:read   Alle endepunkter (intern bruk, dashboards, Grafana osv.)
+//  - hkon:events   Kun offentlige Hkon-endepunkter: /public + address_lookup
+//  - events:write  (ikke implementert)
 //
 // Endepunkter:
 //  - GET /api/events?mode=active|planned|recent|all&limit=50
@@ -82,13 +83,25 @@ if ($scopes === null) {
   json_out(401, ['error'=>'invalid_token','error_description'=>'Invalid or inactive token']);
 }
 
-require_scope($scopes, 'events:read');
-
+// Parse path + mode early so scope check can be endpoint-aware
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
 $isPublicFeed = (strpos($path, '/api/events/public') !== false);
 
-$id = (int)($_GET['id'] ?? 0);
+$id   = (int)($_GET['id'] ?? 0);
 $mode = (string)($_GET['mode'] ?? 'active');
+
+$isHkonEndpoint = $isPublicFeed || $mode === 'address_lookup';
+
+$hasEventsRead = in_array('events:read', $scopes, true);
+$hasHkonEvents = in_array('hkon:events', $scopes, true);
+
+if ($isHkonEndpoint) {
+  if (!$hasEventsRead && !$hasHkonEvents) {
+    json_out(403, ['error'=>'forbidden','error_description'=>'Missing scope: hkon:events (or events:read)']);
+  }
+} else {
+  require_scope($scopes, 'events:read');
+}
 $limit = (int)($_GET['limit'] ?? 50);
 if ($limit < 1) $limit = 50;
 if ($limit > 200) $limit = 200;
@@ -135,7 +148,7 @@ if ($mode === 'address_lookup') {
   $sql = "
     SELECT DISTINCT
       e.id, e.type, e.status, e.severity,
-      e.title_public, e.summary_public, e.customer_actions,
+      e.title_public, e.summary_public, e.customer_actions, e.hkon_message,
       e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
       e.next_update_eta, e.affected_customers,
       e.updated_at
@@ -199,6 +212,7 @@ $args  = [];
 
 if ($isPublicFeed) {
   // Public feed for Hkon: only public + published_to_chatbot
+  // Public feed for Hkon: only public + published_to_chatbot. Include hkon_message.
   $where[] = "e.is_public=1 AND e.published_to_chatbot=1";
   $where[] = "e.status IN ('scheduled','in_progress','monitoring')";
 
@@ -230,7 +244,7 @@ $sqlWhere = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 $sql = "
 SELECT
   e.id, e.type, e.status, e.severity, e.impact, e.services,
-  e.title_public, e.summary_public,
+  e.title_public, e.summary_public, e.customer_actions, e.hkon_message,
   e.schedule_start, e.schedule_end, e.actual_start, e.actual_end,
   e.next_update_eta,
   e.published_to_dashboard, e.published_to_chatbot, e.is_public,

@@ -183,6 +183,9 @@ $JIRA_API_BASE = $JIRA_CLOUD_ID !== ''
 
 $JIRA_FIELD_INCIDENT_DATE = (string)\App\Support\Env::get('JIRA_FIELD_INCIDENT_DATE', '');
 $JIRA_FIELD_INCIDENT_END  = (string)\App\Support\Env::get('JIRA_FIELD_INCIDENT_END',  '');
+$JIRA_FIELD_CHANGE_START  = (string)\App\Support\Env::get('JIRA_FIELD_CHANGE_START',  '');
+$JIRA_FIELD_DOWNTIME_FROM = (string)\App\Support\Env::get('JIRA_FIELD_DOWNTIME_FROM', '');
+$JIRA_FIELD_DOWNTIME_TO   = (string)\App\Support\Env::get('JIRA_FIELD_DOWNTIME_TO',   '');
 
 /* ------------------------------------------------------------
    Address API (BestillFiber) config
@@ -308,6 +311,9 @@ try {
     } else {
       try { $pdo->exec("ALTER TABLE events MODIFY COLUMN severity VARCHAR(32) NULL"); } catch (Throwable $e2) {}
     }
+    if (!col_exists($pdo, 'events', 'hkon_message')) {
+      $pdo->exec("ALTER TABLE events ADD COLUMN hkon_message TEXT NULL");
+    }
   }
 } catch (Throwable $e) {}
 
@@ -334,11 +340,13 @@ if (!$canRead) {
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) { echo '<div class="alert alert-danger mt-3">Mangler id.</div>'; return; }
 
+$isFresh = isset($_GET['fresh']) && $_GET['fresh'] === '1';
+
 if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 $csrf = (string)$_SESSION['csrf_token'];
 
 $err = '';
-$ok  = '';
+$ok  = isset($_GET['saved']) ? 'Lagret.' : '';
 
 /* ------------------------------------------------------------
    Loaders
@@ -865,6 +873,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           $summary_public   = trim((string)($_POST['summary_public'] ?? ''));
           $customer_actions = trim((string)($_POST['customer_actions'] ?? ''));
+          $hkon_message     = trim((string)($_POST['hkon_message'] ?? ''));
 
           $customer_impact = isset($_POST['customer_impact']) ? 1 : 0;
           $affected_customers = as_int($_POST['affected_customers'] ?? 0, 0);
@@ -899,6 +908,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               title_public=?,
               summary_public=?,
               customer_actions=?,
+              hkon_message=?,
               customer_impact=?,
               affected_customers=?,
               severity=?,
@@ -915,6 +925,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $title_public,
             $summary_public !== '' ? $summary_public : null,
             $customer_actions !== '' ? $customer_actions : null,
+            $hkon_message     !== '' ? $hkon_message     : null,
             $customer_impact,
             $affected_customers,
             $severity !== '' ? $severity : null,
@@ -989,7 +1000,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           ]);
         }
 
-        $ok = 'Lagret.';
+        header('Location: /?page=events_view&id=' . $id . '&saved=1');
+        exit;
       }
 
       if ($action === 'add_update' && $canWrite) {
@@ -1044,6 +1056,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               if ($JIRA_FIELD_INCIDENT_END !== '') {
                 $dt = jira_to_datetime((string)($event['actual_end'] ?? ''));
                 if ($dt !== null) $payload['fields'][$JIRA_FIELD_INCIDENT_END] = $dt;
+              }
+            }
+
+            if ((string)$event['type'] === 'planned') {
+              if ($JIRA_FIELD_CHANGE_START !== '') {
+                $dt = jira_to_datetime((string)($event['schedule_start'] ?? ''));
+                if ($dt !== null) $payload['fields'][$JIRA_FIELD_CHANGE_START] = $dt;
+              }
+              if ($JIRA_FIELD_DOWNTIME_FROM !== '') {
+                $dt = jira_to_datetime((string)($event['schedule_start'] ?? ''));
+                if ($dt !== null) $payload['fields'][$JIRA_FIELD_DOWNTIME_FROM] = $dt;
+              }
+              if ($JIRA_FIELD_DOWNTIME_TO !== '') {
+                $dt = jira_to_datetime((string)($event['schedule_end'] ?? ''));
+                if ($dt !== null) $payload['fields'][$JIRA_FIELD_DOWNTIME_TO] = $dt;
               }
             }
 
@@ -1116,6 +1143,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($JIRA_FIELD_INCIDENT_END !== '') {
               $dt = jira_to_datetime((string)($event['actual_end'] ?? ''));
               if ($dt !== null) $updateFields[$JIRA_FIELD_INCIDENT_END] = $dt;
+            }
+          }
+
+          if ((string)$event['type'] === 'planned') {
+            if ($JIRA_FIELD_CHANGE_START !== '') {
+              $dt = jira_to_datetime((string)($event['schedule_start'] ?? ''));
+              if ($dt !== null) $updateFields[$JIRA_FIELD_CHANGE_START] = $dt;
+            }
+            if ($JIRA_FIELD_DOWNTIME_FROM !== '') {
+              $dt = jira_to_datetime((string)($event['schedule_start'] ?? ''));
+              if ($dt !== null) $updateFields[$JIRA_FIELD_DOWNTIME_FROM] = $dt;
+            }
+            if ($JIRA_FIELD_DOWNTIME_TO !== '') {
+              $dt = jira_to_datetime((string)($event['schedule_end'] ?? ''));
+              if ($dt !== null) $updateFields[$JIRA_FIELD_DOWNTIME_TO] = $dt;
             }
           }
 
@@ -1313,6 +1355,63 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 
   document.addEventListener('DOMContentLoaded', applyTypeVisibility);
 })();
+
+// HKON live preview
+(function() {
+  function syncPreview() {
+    var titleEl   = document.getElementById('hkon_title');
+    var summaryEl = document.getElementById('hkon_summary');
+    var actionsEl = document.getElementById('hkon_actions');
+    var affectedEl = document.querySelector('[name="affected_customers"]');
+    var severityEl = document.querySelector('[name="severity"]');
+
+    if (titleEl)   document.getElementById('prev_title').textContent   = titleEl.value || '—';
+    if (summaryEl) {
+      var sv = summaryEl.value.trim();
+      document.getElementById('prev_summary').textContent = sv || '(ikke fylt ut)';
+      document.getElementById('prev_summary').style.color = sv ? '' : '#dc3545';
+    }
+    if (actionsEl) {
+      var av = actionsEl.value.trim();
+      document.getElementById('prev_actions').textContent = av || '(ikke fylt ut)';
+      document.getElementById('prev_actions').style.color = av ? '' : '#dc3545';
+    }
+    var hkonMsgEl = document.getElementById('hkon_message');
+    if (hkonMsgEl) {
+      var hm = hkonMsgEl.value.trim();
+      var prevHm = document.getElementById('prev_hkon_msg');
+      if (hm) {
+        prevHm.textContent = hm;
+        prevHm.style.color = '';
+      } else {
+        prevHm.innerHTML = '<em class="text-muted">(ikke fylt ut)</em>';
+        prevHm.style.color = '';
+      }
+    }
+    if (affectedEl) document.getElementById('prev_affected').textContent = affectedEl.value || '0';
+    if (severityEl) {
+      var opt = severityEl.options[severityEl.selectedIndex];
+      document.getElementById('prev_severity').textContent = opt ? opt.text : '—';
+    }
+
+    // Status label fra select
+    var statusEl = document.querySelector('[name="status"]');
+    if (statusEl) {
+      var sOpt = statusEl.options[statusEl.selectedIndex];
+      document.getElementById('prev_status').textContent = sOpt ? sOpt.text : '—';
+    }
+    // Type label
+    var typeEl = document.querySelector('[name="type"]');
+    if (typeEl) {
+      var tOpt = typeEl.options[typeEl.selectedIndex];
+      document.getElementById('prev_type').textContent = tOpt ? tOpt.text : '—';
+    }
+  }
+
+  document.addEventListener('input',  function(e){ if(document.getElementById('hkonPreviewCard')) syncPreview(); });
+  document.addEventListener('change', function(e){ if(document.getElementById('hkonPreviewCard')) syncPreview(); });
+  document.addEventListener('DOMContentLoaded', function(){ if(document.getElementById('hkonPreviewCard')) syncPreview(); });
+})();
 </script>
 
 <form method="post" class="card mb-3">
@@ -1368,8 +1467,8 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
       </div>
 
       <div class="col-12 col-md-8">
-        <label class="form-label">Tittel</label>
-        <input class="form-control" name="title_public" value="<?= esc((string)$event['title_public']) ?>" <?= !$canWrite?'disabled':'' ?>>
+        <label class="form-label">Tittel <span class="badge bg-primary ms-1" style="font-size:.6rem;vertical-align:middle;"><i class="bi bi-robot me-1"></i>HKON</span></label>
+        <input class="form-control" name="title_public" id="hkon_title" value="<?= esc((string)$event['title_public']) ?>" <?= !$canWrite?'disabled':'' ?>>
       </div>
 
       <div class="col-12 col-md-4">
@@ -1387,13 +1486,29 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
       </div>
 
       <div class="col-12">
-        <label class="form-label">Kort sammendrag</label>
-        <textarea class="form-control" name="summary_public" rows="3" <?= !$canWrite?'disabled':'' ?>><?= esc((string)($event['summary_public'] ?? '')) ?></textarea>
+        <label class="form-label">Kort sammendrag <span class="badge bg-primary ms-1" style="font-size:.6rem;vertical-align:middle;"><i class="bi bi-robot me-1"></i>HKON</span></label>
+        <textarea class="form-control" name="summary_public" id="hkon_summary" rows="3" <?= !$canWrite?'disabled':'' ?>><?= esc((string)($event['summary_public'] ?? '')) ?></textarea>
+        <div class="form-text">Kundeklart språk. Ingen tekniske detaljer, interne systemnavn eller utstyrsbetegnelser.</div>
       </div>
 
       <div class="col-12">
-        <label class="form-label">Hva kan kunden gjøre?</label>
-        <textarea class="form-control" name="customer_actions" rows="2" <?= !$canWrite?'disabled':'' ?>><?= esc((string)($event['customer_actions'] ?? '')) ?></textarea>
+        <label class="form-label">Hva kan kunden gjøre? <span class="badge bg-primary ms-1" style="font-size:.6rem;vertical-align:middle;"><i class="bi bi-robot me-1"></i>HKON</span></label>
+        <textarea class="form-control" name="customer_actions" id="hkon_actions" rows="2" <?= !$canWrite?'disabled':'' ?>><?= esc((string)($event['customer_actions'] ?? '')) ?></textarea>
+        <div class="form-text">Konkrete råd kunden kan følge (f.eks. «Restart hjemmerutere», «Kontakt oss på 123»). Ikke la feltet stå tomt.</div>
+      </div>
+
+      <div class="col-12">
+        <div class="card border-primary">
+          <div class="card-header bg-primary bg-opacity-10 py-2">
+            <label class="form-label mb-0 fw-semibold" for="hkon_message">
+              <i class="bi bi-robot me-1"></i>HKON – Generell informasjon
+            </label>
+          </div>
+          <div class="card-body py-2">
+            <textarea class="form-control" name="hkon_message" id="hkon_message" rows="3" <?= !$canWrite?'disabled':'' ?>><?= esc((string)($event['hkon_message'] ?? '')) ?></textarea>
+            <div class="form-text mt-1">Fritekst kun for HKON-chatboten. Brukes til utfyllende kontekst, statusinformasjon eller meldinger som ikke passer i sammendrag/kundehandling. Kundeklart språk — ingen interne systemnavn eller tekniske detaljer.</div>
+          </div>
+        </div>
       </div>
 
       <div class="col-12 col-md-6" data-only-planned="1">
@@ -1435,7 +1550,9 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
           <input type="hidden" name="jira_issuetype_pick" value="<?= esc($jiraPick) ?>">
 
           <div class="col-12 col-md-6 d-flex align-items-end gap-2 flex-wrap">
-            <?php if ($jiraKey !== ''): ?>
+            <?php if ($isFresh): ?>
+              <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Lagre saken før du oppretter i Jira.</span>
+            <?php elseif ($jiraKey !== ''): ?>
               <a class="btn btn-outline-primary" href="<?= esc(rtrim($JIRA_SITE, '/') . '/browse/' . $jiraKey) ?>" target="_blank" rel="noopener">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Åpne i Jira
               </a>
@@ -1464,6 +1581,62 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
       <?php if ($canPublish): ?>
       <div class="col-12">
         <hr class="my-2">
+
+        <!-- HKON-forhåndsvisning -->
+        <div class="card border-primary mb-3" id="hkonPreviewCard">
+          <div class="card-header bg-primary bg-opacity-10 d-flex align-items-center justify-content-between py-2">
+            <span class="fw-semibold small"><i class="bi bi-robot me-1"></i>HKON-forhåndsvisning</span>
+            <span class="text-muted small">Dette ser HKON-chatboten hvis saken eksponeres</span>
+          </div>
+          <div class="card-body py-2 px-3">
+            <div class="row g-2 small">
+              <div class="col-12">
+                <span class="text-muted">Tittel:</span>
+                <strong id="prev_title" class="ms-1 text-break"><?= esc((string)$event['title_public']) ?></strong>
+              </div>
+              <div class="col-6 col-md-3">
+                <span class="text-muted">Type:</span>
+                <span id="prev_type" class="ms-1"><?= esc($typeLabel) ?></span>
+              </div>
+              <div class="col-6 col-md-3">
+                <span class="text-muted">Status:</span>
+                <span id="prev_status" class="ms-1"><?= esc($statusLabel) ?></span>
+              </div>
+              <div class="col-6 col-md-3">
+                <span class="text-muted">Alvorlighet:</span>
+                <span id="prev_severity" class="ms-1"><?= esc($sevOptions[$sevVal] ?? $sevVal) ?></span>
+              </div>
+              <div class="col-6 col-md-3">
+                <span class="text-muted">Berørte kunder:</span>
+                <span id="prev_affected" class="ms-1"><?= (int)($event['affected_customers'] ?? 0) ?></span>
+              </div>
+              <div class="col-12" id="prev_summary_row">
+                <span class="text-muted">Sammendrag:</span>
+                <span id="prev_summary" class="ms-1"><?= esc((string)($event['summary_public'] ?? '')) ?></span>
+              </div>
+              <div class="col-12" id="prev_actions_row">
+                <span class="text-muted">Kundehandling:</span>
+                <span id="prev_actions" class="ms-1"><?= esc((string)($event['customer_actions'] ?? '')) ?></span>
+              </div>
+              <div class="col-12" id="prev_hkon_msg_row">
+                <span class="text-muted fw-semibold"><i class="bi bi-robot me-1"></i>HKON-melding:</span>
+                <span id="prev_hkon_msg" class="ms-1"><?= esc((string)($event['hkon_message'] ?? '')) ?: '<em class="text-muted">(ikke fylt ut)</em>' ?></span>
+              </div>
+            </div>
+
+            <div class="mt-2 pt-2 border-top">
+              <div class="small fw-semibold mb-1 text-muted">Felter IKKE synlig for HKON:</div>
+              <div class="d-flex flex-wrap gap-1">
+                <span class="badge text-bg-secondary">Jira-nøkkel</span>
+                <span class="badge text-bg-secondary">Interne oppdateringer</span>
+                <span class="badge text-bg-secondary">Dashboard-status</span>
+                <span class="badge text-bg-secondary">Leveransepunkt-ID</span>
+                <span class="badge text-bg-secondary">Berørte adresser (detaljer)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <label class="form-label fw-semibold">Distribusjon</label>
         <div class="form-text mb-2">Velg hvilke systemer og kanaler som skal ha tilgang til denne saken.</div>
         <div class="d-flex flex-wrap gap-3">
@@ -1525,6 +1698,7 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 </div>
 <?php endif; ?>
 
+<?php if (!$isFresh): ?>
 <div class="card mb-3">
   <div class="card-header d-flex align-items-center justify-content-between">
     <div>Berørte adresser</div>
@@ -1840,6 +2014,7 @@ $mapUrl = '/?' . $routeKey . '=events_map&id=' . (int)$id;
 
   </div>
 </div>
+<?php endif; // !$isFresh — Berørte adresser ?>
 
 <div class="card mb-3">
   <div class="card-header fw-semibold">Oppdateringer</div>
