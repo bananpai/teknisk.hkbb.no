@@ -1,6 +1,7 @@
 <?php
 // public/pages/users.php
 
+use App\Audit;
 use App\Database;
 
 // Session er allerede startet i public/index.php
@@ -75,26 +76,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'toggle_active') {
             $newActive = !empty($_POST['new_is_active']) ? 1 : 0;
 
+            $stTarget = $pdo->prepare('SELECT username FROM users WHERE id = :id LIMIT 1');
+            $stTarget->execute([':id' => $userId]);
+            $targetName = (string)($stTarget->fetchColumn() ?: '');
+
             $stmt = $pdo->prepare('UPDATE users SET is_active = :a WHERE id = :id');
-            $stmt->execute([
-                ':a'  => $newActive,
-                ':id' => $userId,
-            ]);
+            $stmt->execute([':a' => $newActive, ':id' => $userId]);
+
+            $evType = $newActive ? 'user_activated' : 'user_deactivated';
+            $evDesc = ($newActive ? 'Bruker aktivert' : 'Bruker deaktivert') . ': ' . $targetName;
+            try { Audit::log($pdo, Audit::CAT_USER, $evType, $evDesc,
+                ['target_type' => 'user', 'target_id' => $userId, 'target_name' => $targetName],
+                Audit::SEV_CRITICAL
+            ); } catch (\Throwable $ae) {}
 
         } elseif ($action === 'reset_2fa') {
-            // Slå av 2FA for brukeren – neste innlogging vil trigge nytt oppsett
+            $stTarget = $pdo->prepare('SELECT username FROM users WHERE id = :id LIMIT 1');
+            $stTarget->execute([':id' => $userId]);
+            $targetName = (string)($stTarget->fetchColumn() ?: '');
+
             $stmt = $pdo->prepare('UPDATE users SET twofa_enabled = 0, twofa_secret = NULL WHERE id = :id');
             $stmt->execute([':id' => $userId]);
 
+            try { Audit::log($pdo, Audit::CAT_USER, '2fa_reset',
+                '2FA tilbakestilt for bruker: ' . $targetName,
+                ['target_type' => 'user', 'target_id' => $userId, 'target_name' => $targetName],
+                Audit::SEV_CRITICAL
+            ); } catch (\Throwable $ae) {}
+
         } elseif ($action === 'delete_user') {
-            // Ikke tillat å slette seg selv
             $stmt = $pdo->prepare('SELECT username FROM users WHERE id = :id LIMIT 1');
             $stmt->execute([':id' => $userId]);
             $targetUsername = $stmt->fetchColumn();
 
             if ($targetUsername && $targetUsername !== $username) {
-                // Relaterte tabeller med CASCADE slettes automatisk
                 $pdo->prepare('DELETE FROM users WHERE id = :id')->execute([':id' => $userId]);
+                try { Audit::log($pdo, Audit::CAT_USER, 'user_deleted',
+                    'Bruker slettet: ' . $targetUsername,
+                    ['target_type' => 'user', 'target_id' => $userId, 'target_name' => $targetUsername],
+                    Audit::SEV_CRITICAL
+                ); } catch (\Throwable $ae) {}
             }
         }
     }

@@ -7,6 +7,7 @@ session_start();
 
 require __DIR__ . '/../../vendor/autoload.php';
 
+use App\Audit;
 use App\Auth\AdLdap;
 use App\Auth\EntraAuth;
 use App\Auth\TwoFaStorage;
@@ -95,10 +96,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['2fa_configured'] = $twoFaEnabled && !empty($twoFaSecret);
         $_SESSION['twofa_verified'] = false;
 
+        try {
+            $auditPdo = $entraPdo ?? Database::getConnection();
+            Audit::log($auditPdo, Audit::CAT_AUTH, 'ad_login_success',
+                'AD-innlogging vellykket for ' . $authResult['username'],
+                ['actor' => $authResult['username'], 'provider' => 'ad']
+            );
+        } catch (\Throwable $auditEx) { error_log('Audit login: ' . $auditEx->getMessage()); }
+
         header('Location: /?page=start');
         exit;
     } catch (\Throwable $e) {
         error_log('Innlogging feilet: ' . $e->getMessage());
+        try {
+            $auditPdo = $entraPdo ?? Database::getConnection();
+            Audit::log($auditPdo, Audit::CAT_AUTH, 'ad_login_failed',
+                'AD-innlogging feilet for bruker: ' . ($username ?? '?'),
+                ['actor' => $username ?? '', 'provider' => 'ad'],
+                Audit::SEV_WARNING
+            );
+        } catch (\Throwable $auditEx) {}
         header('Location: /login/?noaccess=1');
         exit;
     }

@@ -8,6 +8,7 @@ ob_start();
 
 require __DIR__ . '/../vendor/autoload.php';
 
+use App\Audit;
 use App\Database;
 use App\Auth\TwoFaStorage;
 use OTPHP\TOTP;
@@ -256,6 +257,15 @@ if ($page === 'logout') {
         );
     }
 
+    try {
+        if ($pdo) {
+            Audit::log($pdo, Audit::CAT_AUTH, 'logout',
+                'Bruker logget ut: ' . ($_SESSION['username'] ?? '?'),
+                ['provider' => $_SESSION['auth_provider'] ?? '']
+            );
+        }
+    } catch (\Throwable $auditEx) {}
+
     session_destroy();
     header('Location: /login/');
     exit;
@@ -377,6 +387,11 @@ if (($_SESSION['auth_provider'] ?? '') === 'entra') {
                 if (!$twoFaEnabledAccount) {
                     $twoFaStorage->saveTwoFa($username, true, $twoFaSecret);
                     $twoFaEnabledAccount = true;
+                    try { Audit::log($pdo, Audit::CAT_AUTH, '2fa_setup_started',
+                        '2FA aktivert og verifisert for ' . $username); } catch (\Throwable $ae) {}
+                } else {
+                    try { Audit::log($pdo, Audit::CAT_AUTH, '2fa_verified',
+                        '2FA-kode verifisert for ' . $username); } catch (\Throwable $ae) {}
                 }
 
                 $twoFaError = null;
@@ -575,6 +590,7 @@ $allowedPages = [
     'security_ip_filter',
     'api_admin',
     'auth_settings',
+    'audit_log',
 
     // ✅ Avtaler & kontrakter
     'contracts',
@@ -689,6 +705,10 @@ switch ($page) {
     case 'security':
     case 'security_ip_filter':
         $pageTitle = 'Teknisk – Sikkerhet';
+        break;
+
+    case 'audit_log':
+        $pageTitle = 'Teknisk – Audit-logg';
         break;
 
     // ✅ Avtaler & kontrakter

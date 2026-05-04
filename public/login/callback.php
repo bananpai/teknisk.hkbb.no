@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
+use App\Audit;
 use App\Auth\EntraAuth;
 use App\Auth\TwoFaStorage;
 use App\Database;
@@ -113,6 +114,13 @@ $_SESSION['auth_provider']  = 'entra';
 
 $_SESSION['2fa_enabled']    = false;
 $_SESSION['2fa_configured'] = $twoFaEnabled && !empty($twoFaSecret);
+
+try {
+    Audit::log($pdo, Audit::CAT_AUTH, 'entra_login_success',
+        'Entra ID-innlogging vellykket for ' . $username,
+        ['actor' => $username, 'provider' => 'entra']
+    );
+} catch (\Throwable $auditEx) { error_log('Audit entra: ' . $auditEx->getMessage()); }
 
 header('Location: /?page=start');
 exit;

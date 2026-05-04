@@ -11,7 +11,9 @@
 // - Støtter session-nøkler: permissions/roles/groups/user_groups/ad_groups.
 // - Fortsetter å fungere selv om dere kun bruker DB-roller i user_roles.
 
+use App\Audit;
 use App\Database;
+use App\Support\Crypto;
 
 // Session er allerede startet i public/index.php
 
@@ -293,6 +295,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $roles = array_values(array_intersect($roles, array_keys($availableRoles)));
 
     try {
+        // Hent gamle roller for audit
+        $oldRolesStmt = $pdo->prepare('SELECT role FROM user_roles WHERE user_id = :id');
+        $oldRolesStmt->execute([':id' => $userId]);
+        $oldRoles = $oldRolesStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+        // Hent brukernavn for target_name
+        $targetStmt = $pdo->prepare('SELECT username FROM users WHERE id = :id LIMIT 1');
+        $targetStmt->execute([':id' => $userId]);
+        $targetName = (string)($targetStmt->fetchColumn() ?: '');
+
         $pdo->beginTransaction();
 
         // Slett gamle roller
@@ -311,6 +323,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         }
 
         $pdo->commit();
+
+        try { Audit::log($pdo, Audit::CAT_USER, 'roles_updated',
+            'Roller endret for bruker: ' . $targetName,
+            [
+                'target_type' => 'user',
+                'target_id'   => $userId,
+                'target_name' => $targetName,
+                'old_value'   => $oldRoles,
+                'new_value'   => $roles,
+            ],
+            Audit::SEV_CRITICAL
+        ); } catch (\Throwable $ae) {}
+
         $saveMessage = 'Rettigheter er oppdatert.';
     } catch (\Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -351,8 +376,8 @@ if (!$user) {
 }
 
 $usernameRow   = $user['username'];
-$displayName   = $user['display_name'] ?: $usernameRow;
-$email         = $user['email'] ?: null;
+$displayName   = Crypto::decryptOrNull($user['display_name']) ?: $usernameRow;
+$email         = Crypto::decryptOrNull($user['email']);
 $isActive      = (bool)$user['is_active'];
 $twofa         = (bool)$user['twofa_enabled'];
 $lastLogin     = $user['last_login_at'];

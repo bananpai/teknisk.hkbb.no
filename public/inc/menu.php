@@ -261,8 +261,10 @@ $adminPages = [
     'lager_users_edit',
     'security',
     'security_ip_filter',
+    'security_iis',
     'api_admin',
     'auth_settings',
+    'audit_log',
 ];
 $adminOpen = in_array($currentPage, $adminPages, true);
 
@@ -418,6 +420,7 @@ $_bcMap = [
     'lager_users_edit'           => ['System', 'Administrasjon'],
     'security'                   => ['System', 'Administrasjon'],
     'security_ip_filter'         => ['System', 'Administrasjon'],
+    'security_iis'               => ['System', 'Administrasjon'],
     'api_admin'                  => ['System', 'Administrasjon'],
     'auth_settings'              => ['System', 'Administrasjon'],
 ];
@@ -472,7 +475,7 @@ $topbarBreadcrumb = $_bcMap[$currentPage] ?? [];
             <a href="/?page=events"
                class="nav-item nav-sub <?= in_array($currentPage, ['events','events_new','events_view','events_edit'], true) ? 'active' : '' ?>">
                 <i class="bi bi-list-task nav-icon"></i>
-                <span class="nav-label">Hendelsesliste</span>
+                <span class="nav-label">Åpne saker</span>
             </a>
             <a href="/?page=events_dashboards"
                class="nav-item nav-sub <?= $currentPage === 'events_dashboards' ? 'active' : '' ?>">
@@ -753,6 +756,11 @@ $topbarBreadcrumb = $_bcMap[$currentPage] ?? [];
                 <i class="bi bi-shield-check nav-icon"></i>
                 <span class="nav-label">Sikkerhet</span>
             </a>
+            <a href="/?page=security_iis"
+               class="nav-item nav-sub <?= $currentPage === 'security_iis' ? 'active' : '' ?>">
+                <i class="bi bi-shield-lock nav-icon"></i>
+                <span class="nav-label">IIS IP-filter</span>
+            </a>
             <a href="/?page=api_admin"
                class="nav-item nav-sub <?= $currentPage === 'api_admin' ? 'active' : '' ?>">
                 <i class="bi bi-key nav-icon"></i>
@@ -762,6 +770,11 @@ $topbarBreadcrumb = $_bcMap[$currentPage] ?? [];
                class="nav-item nav-sub <?= $currentPage === 'auth_settings' ? 'active' : '' ?>">
                 <i class="bi bi-person-badge nav-icon"></i>
                 <span class="nav-label">Autentisering</span>
+            </a>
+            <a href="/?page=audit_log"
+               class="nav-item nav-sub <?= $currentPage === 'audit_log' ? 'active' : '' ?>">
+                <i class="bi bi-journal-text nav-icon"></i>
+                <span class="nav-label">Audit-logg</span>
             </a>
         </div>
         <?php endif; ?>

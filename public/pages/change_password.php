@@ -174,8 +174,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                         if ($ok) {
                             $_SESSION['csrf_change_password'] = bin2hex(random_bytes(32));
                             $csrf = (string)$_SESSION['csrf_change_password'];
-
                             $message = 'Passordet ble endret i AD. Neste innlogging må bruke nytt passord.';
+                            try {
+                                \App\Audit::log($pdo, \App\Audit::CAT_AUTH, 'password_changed',
+                                    'Passord endret i AD for bruker: ' . $username,
+                                    [],
+                                    \App\Audit::SEV_WARNING
+                                );
+                            } catch (\Throwable $ae) {}
                         } else {
                             $errno = @ldap_errno($conn);
                             $err   = @ldap_error($conn);

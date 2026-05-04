@@ -3,6 +3,7 @@
 
 declare(strict_types=1);
 
+use App\Audit;
 use App\Database;
 
 if (!function_exists('h')) {
@@ -101,6 +102,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_entra'])) {
         }
 
         $saved = true;
+        try { Audit::log($pdo, Audit::CAT_SYSTEM, 'entra_settings_updated',
+            'Entra ID-innstillinger oppdatert',
+            [
+                'new_value' => array_combine(
+                    array_keys($fields),
+                    array_map(fn($k, $v) => ($k === 'entra_client_secret' ? '[SATT]' : $v), array_keys($fields), $fields)
+                ),
+            ],
+            Audit::SEV_CRITICAL
+        ); } catch (\Throwable $ae) {}
     } catch (\Throwable $e) {
         $saveErr = $e->getMessage();
         error_log('auth_settings lagring feilet: ' . $e->getMessage());
